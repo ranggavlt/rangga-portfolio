@@ -147,7 +147,7 @@ function AdminLayoutInner() {
   const outlet = useOutlet()
   const location = useLocation()
   const navigate = useNavigate()
-  const { session, signOut } = useAuth()
+  const { session, signOut, mode } = useAuth()
   const { repository } = usePortfolio()
   const { showToast } = useToast()
   const [drawerOpen, setDrawerOpen] = useState(false)
@@ -163,16 +163,16 @@ function AdminLayoutInner() {
   return (
     <div className="admin-shell">
       <aside className={`admin-sidebar ${drawerOpen ? 'is-open' : ''}`}>
-        <div className="admin-brand"><span className="brand-mark">RA</span><div><strong>Portfolio admin</strong><span>Local demo workspace</span></div><button className="drawer-close" type="button" onClick={() => setDrawerOpen(false)} aria-label="Close admin navigation"><AdminIcon name="close" /></button></div>
+        <div className="admin-brand"><span className="brand-mark">RA</span><div><strong>Portfolio admin</strong><span>{mode === 'local' ? 'Local demo workspace' : 'Supabase workspace'}</span></div><button className="drawer-close" type="button" onClick={() => setDrawerOpen(false)} aria-label="Close admin navigation"><AdminIcon name="close" /></button></div>
         <nav className="admin-nav" aria-label="Admin navigation">
           <div className="admin-nav-label">Manage</div>
           {navItems.map((item) => <a className={location.pathname === item.to || (!item.end && location.pathname.startsWith(`${item.to}/`)) ? 'is-active' : ''} href={item.to} key={item.to} onClick={(event) => { event.preventDefault(); navigate(item.to); setDrawerOpen(false) }}>{item.label}{item.label === 'Messages' && <span className="nav-count">{repository.getMessages().filter((message) => !message.read).length || ''}</span>}</a>)}
         </nav>
-        <div className="admin-sidebar-bottom"><button className="reset-demo-button" type="button" onClick={() => setResetOpen(true)}><AdminIcon name="reset" size={15} /> Reset demo data</button><div className="demo-note">LocalStorage only.<br />Not production data.</div></div>
+        {mode === 'local' && <div className="admin-sidebar-bottom"><button className="reset-demo-button" type="button" onClick={() => setResetOpen(true)}><AdminIcon name="reset" size={15} /> Reset demo data</button><div className="demo-note">LocalStorage only.<br />Not production data.</div></div>}
       </aside>
       {drawerOpen && <button className="drawer-backdrop" type="button" aria-label="Close admin navigation" onClick={() => setDrawerOpen(false)} />}
       <div className="admin-main">
-        <header className="admin-topbar"><button className="drawer-open" type="button" onClick={() => setDrawerOpen(true)} aria-label="Open admin navigation"><AdminIcon name="menu" /></button><div className="admin-breadcrumb"><span>Portfolio</span><AdminIcon name="chevron" size={14} /><strong>{pageTitle}</strong></div><div className="admin-user"><span className="user-avatar">{session?.name.slice(0, 1) ?? 'D'}</span><span>{session?.name ?? 'Demo editor'}</span><button type="button" onClick={() => { signOut(); navigate('/admin/login') }} aria-label="Sign out"><AdminIcon name="logout" size={16} /></button></div></header>
+        <header className="admin-topbar"><button className="drawer-open" type="button" onClick={() => setDrawerOpen(true)} aria-label="Open admin navigation"><AdminIcon name="menu" /></button><div className="admin-breadcrumb"><span>Portfolio</span><AdminIcon name="chevron" size={14} /><strong>{pageTitle}</strong></div><div className="admin-user"><span className="user-avatar">{session?.name.slice(0, 1) ?? 'A'}</span><span>{session?.name ?? 'Administrator'}</span><button type="button" onClick={() => { void signOut().then(() => navigate('/admin/login')).catch((error: unknown) => showToast(error instanceof Error ? error.message : 'Could not sign out.', 'error')) }} aria-label="Sign out"><AdminIcon name="logout" size={16} /></button></div></header>
         <main className="admin-content">{outlet}</main>
       </div>
       <ConfirmDialog open={resetOpen} title="Reset the demo workspace?" description="This clears all local edits, messages, and temporary previews and restores the original portfolio seed." confirmLabel="Reset demo data" danger onConfirm={handleReset} onCancel={() => setResetOpen(false)} />

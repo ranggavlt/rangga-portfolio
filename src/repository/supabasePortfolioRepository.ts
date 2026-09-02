@@ -1,0 +1,157 @@
+import { SupabaseClient } from '@supabase/supabase-js'
+import {
+  ContactMessage, EducationEntry, ExperienceEntry, OrganizationEntry, PortfolioData, PortfolioProject,
+  PortfolioRepository, Profile, ProjectImage, RepositoryListener, SkillGroup, SocialLink,
+} from '../domain/types'
+import { Database, EducationRow, ExperienceRow, OrganizationRow, ProfileRow, ProjectImageRow, ProjectRow, SkillRow, SocialLinkRow, ContactMessageRow } from '../lib/database.types'
+import { createSeedPortfolioData } from './seed'
+
+const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value)) as T
+const byOrder = <T extends { displayOrder: number }>(items: T[]) => [...items].sort((a, b) => a.displayOrder - b.displayOrder)
+
+const projectFromRow = (row: ProjectRow, images: ProjectImageRow[]): PortfolioProject => ({
+  id: row.id, slug: row.slug, title: row.title, year: row.year, category: row.category,
+  shortDescription: row.short_description, fullDescription: row.full_description, role: row.role,
+  tech: row.tech ?? [], liveUrl: row.live_url, sourceUrl: row.source_url,
+  published: row.status === 'published', displayOrder: row.display_order, updatedAt: row.updated_at,
+  images: images.filter((image) => image.project_id === row.id).sort((a, b) => a.position - b.position).map((image) => ({
+    id: image.id, src: image.src, alt: image.alt, caption: image.caption, position: image.position as ProjectImage['position'],
+  })) as PortfolioProject['images'],
+})
+
+const profileFromRow = (row: ProfileRow): Profile => ({
+  fullName: row.full_name, professionalTitle: row.professional_title, heroEyebrow: row.hero_eyebrow,
+  heroHeading: row.hero_heading, heroDescription: row.hero_description, aboutHeading: row.about_heading,
+  aboutBiography: row.about_biography, aboutSecondary: row.about_secondary, location: row.location,
+  availabilityText: row.availability_text, email: row.email, portraitUrl: row.portrait_url, cvUrl: row.cv_url,
+  footerText: row.footer_text,
+})
+
+export class SupabasePortfolioRepository implements PortfolioRepository {
+  readonly mode = 'supabase' as const
+  private data: PortfolioData = createSeedPortfolioData()
+  private listeners = new Set<RepositoryListener>()
+
+  constructor(private readonly client: SupabaseClient<Database>) {}
+
+  async initialize() { await this.refresh() }
+
+  async refresh() {
+    const [projects, images, profile, experience, education, organizations, skills, socialLinks, messages] = await Promise.all([
+      this.read('projects'), this.read('project_images'), this.read('profiles'), this.read('experiences'), this.read('education'),
+      this.read('organizations'), this.read('skills'), this.read('social_links'), this.read('contact_messages'),
+    ])
+    const seed = createSeedPortfolioData()
+    this.data = {
+      projects: (projects as ProjectRow[]).map((project) => projectFromRow(project, images as ProjectImageRow[])),
+      profile: (profile as ProfileRow[])[0] ? profileFromRow((profile as ProfileRow[])[0]) : seed.profile,
+      experience: (experience as ExperienceRow[]).map((row) => ({ id: row.id, period: row.period, company: row.company, role: row.role, description: row.description, published: row.published, displayOrder: row.display_order })),
+      education: (education as EducationRow[]).map((row) => ({ id: row.id, period: row.period, institution: row.institution, degree: row.degree, detail: row.detail, displayOrder: row.display_order })),
+      organizations: (organizations as OrganizationRow[]).map((row) => ({ id: row.id, name: row.name, meta: row.meta, detail: row.detail, published: row.published, displayOrder: row.display_order })),
+      skills: (skills as SkillRow[]).map((row) => ({ id: row.id, label: row.label, skills: row.skills ?? [], displayOrder: row.display_order })),
+      socialLinks: (socialLinks as SocialLinkRow[]).map((row) => ({ id: row.id, platform: row.platform, url: row.url, displayOrder: row.display_order, enabled: row.enabled })),
+      messages: (messages as ContactMessageRow[]).map((row) => ({ id: row.id, sender: row.sender, email: row.email, message: row.message, submittedAt: row.submitted_at, read: row.read })),
+    }
+    this.emit()
+  }
+
+  getSnapshot() { return clone(this.data) }
+  subscribe(listener: RepositoryListener) { this.listeners.add(listener); return () => this.listeners.delete(listener) }
+  async reset() { throw new Error('Reset is available only in LocalStorage demo mode.') }
+
+  getProjects() { return byOrder(this.data.projects) }
+  getProject(id: string) { return this.data.projects.find((project) => project.id === id) }
+  getProjectImages(projectId: string) { return clone(this.getProject(projectId)?.images ?? []) }
+
+  async saveProject(project: PortfolioProject) {
+    this.assertThreeImages(project.images)
+    const payload = {
+      slug: project.slug, title: project.title, year: project.year, category: project.category,
+      short_description: project.shortDescription, full_description: project.fullDescription, role: project.role,
+      tech: project.tech, live_url: project.liveUrl, source_url: project.sourceUrl,
+      status: project.published ? 'published' as const : 'draft' as const, display_order: project.displayOrder,
+    }
+    const existing = this.data.projects.some((item) => item.id === project.id)
+    const query = existing
+      ? this.client.from('projects').update(payload).eq('id', project.id).select('id').single()
+      : this.client.from('projects').insert(payload).select('id').single()
+    const { data, error } = await query
+    if (error) throw new Error(`Could not save project: ${error.message}`)
+    await this.replaceImages(data.id, project.images)
+    await this.refresh()
+  }
+
+  async deleteProject(id: string) { await this.remove('projects', id, 'project'); await this.refresh() }
+  async updateProjectImages(projectId: string, images: [ProjectImage, ProjectImage, ProjectImage]) { this.assertThreeImages(images); await this.replaceImages(projectId, images); await this.refresh() }
+
+  getExperience() { return byOrder(this.data.experience) }
+  async saveExperience(entry: ExperienceEntry) { await this.saveOrdered('experiences', entry.id, this.data.experience.some((x) => x.id === entry.id), { period: entry.period, company: entry.company, role: entry.role, description: entry.description, published: entry.published, display_order: entry.displayOrder }, 'experience'); await this.refresh() }
+  async deleteExperience(id: string) { await this.remove('experiences', id, 'experience'); await this.refresh() }
+
+  getEducation() { return byOrder(this.data.education) }
+  async saveEducation(entry: EducationEntry) { await this.saveOrdered('education', entry.id, this.data.education.some((x) => x.id === entry.id), { period: entry.period, institution: entry.institution, degree: entry.degree, detail: entry.detail, display_order: entry.displayOrder }, 'education'); await this.refresh() }
+  async deleteEducation(id: string) { await this.remove('education', id, 'education'); await this.refresh() }
+
+  getOrganizations() { return byOrder(this.data.organizations) }
+  async saveOrganization(entry: OrganizationEntry) { await this.saveOrdered('organizations', entry.id, this.data.organizations.some((x) => x.id === entry.id), { name: entry.name, meta: entry.meta, detail: entry.detail, published: entry.published, display_order: entry.displayOrder }, 'organization'); await this.refresh() }
+  async deleteOrganization(id: string) { await this.remove('organizations', id, 'organization'); await this.refresh() }
+
+  getSkills() { return byOrder(this.data.skills) }
+  async saveSkillGroup(group: SkillGroup) { await this.saveOrdered('skills', group.id, this.data.skills.some((x) => x.id === group.id), { label: group.label, skills: group.skills, display_order: group.displayOrder }, 'skill group'); await this.refresh() }
+  async deleteSkillGroup(id: string) { await this.remove('skills', id, 'skill group'); await this.refresh() }
+
+  getProfile() { return clone(this.data.profile) }
+  async saveProfile(profile: Profile) {
+    const payload = { full_name: profile.fullName, professional_title: profile.professionalTitle, hero_eyebrow: profile.heroEyebrow, hero_heading: profile.heroHeading, hero_description: profile.heroDescription, about_heading: profile.aboutHeading, about_biography: profile.aboutBiography, about_secondary: profile.aboutSecondary, location: profile.location, availability_text: profile.availabilityText, email: profile.email, portrait_url: profile.portraitUrl, cv_url: profile.cvUrl, footer_text: profile.footerText }
+    const { data: current, error: readError } = await this.client.from('profiles').select('id').limit(1).maybeSingle()
+    if (readError) throw new Error(`Could not locate the profile: ${readError.message}`)
+    const { error } = current ? await this.client.from('profiles').update(payload).eq('id', current.id) : await this.client.from('profiles').insert(payload)
+    if (error) throw new Error(`Could not save profile: ${error.message}`)
+    await this.refresh()
+  }
+
+  getSocialLinks() { return byOrder(this.data.socialLinks) }
+  async saveSocialLink(link: SocialLink) { await this.saveOrdered('social_links', link.id, this.data.socialLinks.some((x) => x.id === link.id), { platform: link.platform, url: link.url, display_order: link.displayOrder, enabled: link.enabled }, 'social link'); await this.refresh() }
+  async deleteSocialLink(id: string) { await this.remove('social_links', id, 'social link'); await this.refresh() }
+
+  getMessages() { return [...this.data.messages].sort((a, b) => b.submittedAt.localeCompare(a.submittedAt)) }
+  async addMessage(message: ContactMessage) {
+    const { error } = await this.client.from('contact_messages').insert({ sender: message.sender, email: message.email, message: message.message, submitted_at: message.submittedAt })
+    if (error) throw new Error(`Could not send message: ${error.message}`)
+  }
+  async markMessageRead(id: string) { const { error } = await this.client.from('contact_messages').update({ read: true }).eq('id', id); if (error) throw new Error(`Could not mark message as read: ${error.message}`); await this.refresh() }
+  async deleteMessage(id: string) { await this.remove('contact_messages', id, 'message'); await this.refresh() }
+
+  private async read(table: keyof Database['public']['Tables']) {
+    const { data, error } = await this.client.from(table).select('*')
+    if (error) throw new Error(`Could not load ${table}: ${error.message}`)
+    return data ?? []
+  }
+
+  private async saveOrdered(table: 'experiences' | 'education' | 'organizations' | 'skills' | 'social_links', id: string, existing: boolean, payload: object, label: string) {
+    const values = payload as never
+    const { error } = existing ? await this.client.from(table).update(values).eq('id', id) : await this.client.from(table).insert(values)
+    if (error) throw new Error(`Could not save ${label}: ${error.message}`)
+  }
+
+  private async remove(table: 'projects' | 'experiences' | 'education' | 'organizations' | 'skills' | 'social_links' | 'contact_messages', id: string, label: string) {
+    const { error } = await this.client.from(table).delete().eq('id', id)
+    if (error) throw new Error(`Could not delete ${label}: ${error.message}`)
+  }
+
+  private async replaceImages(projectId: string, images: [ProjectImage, ProjectImage, ProjectImage]) {
+    const { error } = await this.client.from('project_images').upsert(
+      images.map((image) => ({ project_id: projectId, src: image.src, alt: image.alt, caption: image.caption, position: image.position })),
+      { onConflict: 'project_id,position' },
+    )
+    if (error) throw new Error(`Could not save project images: ${error.message}`)
+  }
+
+  private assertThreeImages(images: ProjectImage[]): asserts images is [ProjectImage, ProjectImage, ProjectImage] {
+    if (images.length !== 3 || new Set(images.map((image) => image.position)).size !== 3 || images.some((image) => image.position < 1 || image.position > 3)) {
+      throw new Error('Each project must have exactly three images in positions 1, 2, and 3.')
+    }
+  }
+
+  private emit() { this.listeners.forEach((listener) => listener(this.getSnapshot())) }
+}

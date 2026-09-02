@@ -107,6 +107,7 @@ export type PortfolioData = {
 export type RepositoryListener = (data: PortfolioData) => void
 
 export interface PortfolioRepository {
+  readonly mode: 'local' | 'supabase'
   // Lifecycle
   initialize(): Promise<void>
   refresh(): Promise<void>

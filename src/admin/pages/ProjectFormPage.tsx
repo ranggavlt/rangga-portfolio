@@ -100,7 +100,7 @@ export default function ProjectFormPage() {
     setSaving(true)
     try {
       await repository.saveProject({ ...project, slug: finalSlug, updatedAt: new Date().toISOString() })
-      showToast(isNew ? 'Project created in the local demo.' : 'Project changes saved locally.')
+      showToast(isNew ? 'Project created.' : 'Project changes saved.')
       navigate('/admin/projects')
     } catch {
       showToast('Failed to save project. Please try again.', 'error')
@@ -135,9 +135,9 @@ export default function ProjectFormPage() {
             </div></section>
           </div>
         </div>
-        <aside className="editor-side"><div className="editor-side-card"><h2>Publishing</h2><Toggle label="Visible on public page" checked={project.published} onChange={(value) => update('published', value)} /><p style={{ marginTop: 12 }}>Drafts stay available in the admin list but are hidden from the public portfolio.</p></div><div className="editor-side-card"><h2>Demo note</h2><p>Changes are persisted in the <code>rangga-portfolio-demo-v1</code> local repository only.</p></div></aside>
+        <aside className="editor-side"><div className="editor-side-card"><h2>Publishing</h2><Toggle label="Visible on public page" checked={project.published} onChange={(value) => update('published', value)} /><p style={{ marginTop: 12 }}>Drafts stay available in the admin list but are hidden from the public portfolio.</p></div><div className="editor-side-card"><h2>Image note</h2><p>Phase 3 keeps external image URLs. Managed uploads arrive with Supabase Storage in Phase 4.</p></div></aside>
       </div>
-      <div className="form-actions"><div className="form-feedback">{saving ? 'Saving locally…' : ''}</div><button type="button" className="admin-button button-quiet" onClick={() => navigate('/admin/projects')}>Cancel</button><button type="submit" className="admin-button button-dark" disabled={saving}>{saving ? 'Saving' : 'Save project'} <AdminIcon name="arrow" size={14} /></button></div>
+      <div className="form-actions"><div className="form-feedback">{saving ? 'Saving…' : ''}</div><button type="button" className="admin-button button-quiet" onClick={() => navigate('/admin/projects')}>Cancel</button><button type="submit" className="admin-button button-dark" disabled={saving}>{saving ? 'Saving' : 'Save project'} <AdminIcon name="arrow" size={14} /></button></div>
     </form>
   </>
 }

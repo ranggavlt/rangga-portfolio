@@ -17,7 +17,9 @@ import PublicProjectPlaceholder from './pages/PublicProjectPlaceholder'
 import NotFoundPage from './pages/NotFoundPage'
 
 function ProtectedAdminRoute() {
-  const { session } = useAuth()
+  const { session, loading, error } = useAuth()
+  if (loading) return <div className="admin-loading" role="status">Checking administrator access…</div>
+  if (error) return <div className="login-screen"><div className="login-card"><div className="admin-error" role="alert">{error}</div><Link className="admin-link" to="/admin/login">Return to sign in</Link></div></div>
   return session ? <Outlet /> : <Navigate to="/admin/login" replace />
 }
 

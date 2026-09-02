@@ -21,6 +21,7 @@ const orderByDisplay = <T extends { displayOrder: number }>(items: T[]) => [...i
 const stamp = () => new Date().toISOString()
 
 export class LocalPortfolioRepository implements PortfolioRepository {
+  readonly mode = 'local' as const
   private data: PortfolioData
   private listeners = new Set<RepositoryListener>()
 

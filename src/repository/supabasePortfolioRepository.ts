@@ -37,10 +37,18 @@ export class SupabasePortfolioRepository implements PortfolioRepository {
   async initialize() { await this.refresh() }
 
   async refresh() {
-    const [projects, images, profile, experience, education, organizations, skills, socialLinks, messages] = await Promise.all([
+    const publicDataPromise = Promise.all([
       this.read('projects'), this.read('project_images'), this.read('profiles'), this.read('experiences'), this.read('education'),
-      this.read('organizations'), this.read('skills'), this.read('social_links'), this.read('contact_messages'),
+      this.read('organizations'), this.read('skills'), this.read('social_links'),
     ])
+    const [{ data: authData, error: authError }, publicData] = await Promise.all([
+      this.client.auth.getSession(),
+      publicDataPromise,
+    ])
+    if (authError) throw new Error(`Could not inspect the Supabase session while refreshing portfolio data: ${authError.message}`)
+
+    const [projects, images, profile, experience, education, organizations, skills, socialLinks] = publicData
+    const messages = authData.session ? await this.read('contact_messages') : []
     const seed = createSeedPortfolioData()
     this.data = {
       projects: (projects as ProjectRow[]).map((project) => projectFromRow(project, images as ProjectImageRow[])),

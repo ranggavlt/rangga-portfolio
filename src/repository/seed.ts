@@ -78,7 +78,7 @@ export const createSeedPortfolioData = (): PortfolioData => ({
     availabilityText: 'Available for select projects',
     email: 'hello@rangga.dev',
     portraitUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=1100&q=86',
-    cvUrl: '#',
+    cvUrl: '',
     footerText: 'Designed and built with intention.',
   },
   socialLinks: socialLinks.map((link, index) => ({

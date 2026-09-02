@@ -1,4 +1,5 @@
 import { FormEvent, CSSProperties, PointerEvent as ReactPointerEvent, useCallback, useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { PortfolioProject } from './domain/types'
 import { usePortfolio } from './repository/PortfolioProvider'
 import './styles.css'
@@ -217,6 +218,7 @@ function ProjectsSection() {
                   <div className="project-links">
                     <a href={project.liveUrl} target="_blank" rel="noreferrer">Visit live site <Icon name="arrow-up-right" size={16} /></a>
                     <a href={project.sourceUrl} target="_blank" rel="noreferrer">Source code <Icon name="arrow-up-right" size={16} /></a>
+                    <Link to={`/projects/${project.slug}`}>View case study <Icon name="arrow-right" size={16} /></Link>
                   </div>
                 </Reveal>
               </div>

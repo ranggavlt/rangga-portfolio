@@ -60,7 +60,7 @@ export const projects: Project[] = [
     source: 'https://github.com/rangga-ariansyah/common-ground',
     images: [
       {
-        src: 'https://images.unsplash.com/photo-1524666041070-9c876415a7d5?auto=format&fit=crop&w=1600&q=86',
+        src: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1600&q=86',
         alt: 'Map and notebook on a desk',
         caption: 'Place as a starting point, not a destination.',
       },

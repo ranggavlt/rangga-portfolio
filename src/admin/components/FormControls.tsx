@@ -1,8 +1,15 @@
-import { ChangeEvent, ReactNode, useId, useState } from 'react'
+import React, { ChangeEvent, ReactElement, ReactNode, useId, useState } from 'react'
 
 export function AdminField({ label, hint, error, children }: { label: string; hint?: string; error?: string; children: ReactNode }) {
   const id = useId()
-  return <div className={`admin-field ${error ? 'is-invalid' : ''}`}><label htmlFor={id}>{label}</label>{children}{hint && <small>{hint}</small>}{error && <span className="field-error">{error}</span>}</div>
+  return (
+    <div className={`admin-field ${error ? 'is-invalid' : ''}`}>
+      <label htmlFor={id}>{label}</label>
+      {React.cloneElement(children as ReactElement<{ id?: string }>, { id })}
+      {hint && <small>{hint}</small>}
+      {error && <span className="field-error">{error}</span>}
+    </div>
+  )
 }
 
 export function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) { return <input {...props} className={`admin-input ${props.className ?? ''}`} /> }

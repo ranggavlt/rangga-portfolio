@@ -1,4 +1,4 @@
-import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
+import { Link, Navigate, Outlet, Route, Routes } from 'react-router-dom'
 import App from './App'
 import { useAuth } from './auth/AuthProvider'
 import { AdminLayout } from './admin/components/AdminUI'
@@ -22,7 +22,7 @@ function ProtectedAdminRoute() {
 }
 
 function AdminNotFound() {
-  return <div className="admin-not-found"><div className="admin-eyebrow">Admin / 404</div><h1>Unknown admin page.</h1><p>This route is not part of the local demo workspace.</p><a className="admin-button button-dark" href="/admin">Back to overview</a></div>
+  return <div className="admin-not-found"><div className="admin-eyebrow">Admin / 404</div><h1>Unknown admin page.</h1><p>This route is not part of the local demo workspace.</p><Link className="admin-button button-dark" to="/admin">Back to overview</Link></div>
 }
 
 export function PortfolioRouter() {

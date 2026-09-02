@@ -1,4 +1,4 @@
-import { createContext, ReactNode, useContext, useEffect, useState } from 'react'
+import { createContext, ReactNode, useContext, useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate, useOutlet } from 'react-router-dom'
 import { usePortfolio } from '../../repository/PortfolioProvider'
 import { useAuth } from '../../auth/AuthProvider'
@@ -76,8 +76,67 @@ export function LoadingState() { return <div className="admin-loading"><span cla
 export function ErrorState({ message }: { message: string }) { return <div className="admin-error">{message}</div> }
 
 export function ConfirmDialog({ open, title, description, confirmLabel = 'Confirm', onConfirm, onCancel, danger = false }: { open: boolean; title: string; description: string; confirmLabel?: string; onConfirm: () => void; onCancel: () => void; danger?: boolean }) {
+  const cancelRef = useRef<HTMLButtonElement>(null)
+  const confirmRef = useRef<HTMLButtonElement>(null)
+  const returnFocusRef = useRef<Element | null>(null)
+
+  // Capture the triggering element before the dialog opens
+  useEffect(() => {
+    if (open) {
+      returnFocusRef.current = document.activeElement
+      // Defer so the dialog is mounted before we try to focus
+      const id = window.setTimeout(() => cancelRef.current?.focus(), 0)
+      return () => window.clearTimeout(id)
+    } else {
+      // Restore focus when dialog closes
+      if (returnFocusRef.current instanceof HTMLElement) {
+        returnFocusRef.current.focus()
+        returnFocusRef.current = null
+      }
+    }
+  }, [open])
+
+  // Escape key handler
+  useEffect(() => {
+    if (!open) return
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') { event.preventDefault(); onCancel() }
+      // Focus trap — Tab cycles only between Cancel and Confirm
+      if (event.key === 'Tab') {
+        const first = cancelRef.current
+        const last = confirmRef.current
+        if (!first || !last) return
+        if (event.shiftKey) {
+          if (document.activeElement === first) { event.preventDefault(); last.focus() }
+        } else {
+          if (document.activeElement === last) { event.preventDefault(); first.focus() }
+        }
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [open, onCancel])
+
   if (!open) return null
-  return <div className="dialog-backdrop" role="presentation" onMouseDown={onCancel}><div className="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-title" onMouseDown={(event) => event.stopPropagation()}><div className="admin-eyebrow">Confirmation</div><h2 id="confirm-title">{title}</h2><p>{description}</p><div className="dialog-actions"><button className="admin-button button-quiet" type="button" onClick={onCancel}>Cancel</button><button className={`admin-button ${danger ? 'button-danger' : 'button-dark'}`} type="button" onClick={onConfirm}>{confirmLabel}</button></div></div></div>
+  return (
+    <div className="dialog-backdrop" role="presentation" onMouseDown={onCancel}>
+      <div
+        className="confirm-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="confirm-title"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <div className="admin-eyebrow">Confirmation</div>
+        <h2 id="confirm-title">{title}</h2>
+        <p>{description}</p>
+        <div className="dialog-actions">
+          <button ref={cancelRef} className="admin-button button-quiet" type="button" onClick={onCancel}>Cancel</button>
+          <button ref={confirmRef} className={`admin-button ${danger ? 'button-danger' : 'button-dark'}`} type="button" onClick={onConfirm}>{confirmLabel}</button>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export function AdminLayout() {

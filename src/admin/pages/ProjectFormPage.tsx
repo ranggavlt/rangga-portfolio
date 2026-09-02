@@ -52,13 +52,32 @@ export default function ProjectFormPage() {
   const update = (field: keyof PortfolioProject, value: PortfolioProject[keyof PortfolioProject]) => setProject((current) => ({ ...current, [field]: value }))
   const updateImage = (position: 1 | 2 | 3, field: keyof ProjectImage, value: string) => setProject((current) => ({ ...current, images: current.images.map((image) => image.position === position ? { ...image, [field]: value } : image) as PortfolioProject['images'] }))
 
+  // Revoke all remaining blob URLs when the form unmounts
+  useEffect(() => {
+    return () => {
+      setPreviewUrls((current) => {
+        Object.values(current).forEach((url) => URL.revokeObjectURL(url))
+        return {}
+      })
+    }
+  }, [])
+
   const handleFile = (position: 1 | 2 | 3, event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
-    setPreviewUrls((current) => ({ ...current, [position]: URL.createObjectURL(file) }))
+    setPreviewUrls((current) => {
+      // Revoke the previous blob URL for this slot before creating a new one
+      if (current[position]) URL.revokeObjectURL(current[position])
+      return { ...current, [position]: URL.createObjectURL(file) }
+    })
   }
 
-  const resetPreview = (position: 1 | 2 | 3) => setPreviewUrls((current) => { const next = { ...current }; delete next[position]; return next })
+  const resetPreview = (position: 1 | 2 | 3) => setPreviewUrls((current) => {
+    if (current[position]) URL.revokeObjectURL(current[position])
+    const next = { ...current }
+    delete next[position]
+    return next
+  })
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault()
@@ -70,11 +89,17 @@ export default function ProjectFormPage() {
     project.images.forEach((image, index) => {
       if (!image.src.trim() || !image.alt.trim() || !image.caption.trim()) nextErrors.push(`Gallery image ${index + 1} needs a URL, alt text, and caption.`)
     })
+    // Slug uniqueness — check no other project already uses this slug
+    const finalSlug = slugify(project.slug || project.title)
+    const slugConflict = repository.getProjects().some(
+      (p) => slugify(p.slug) === finalSlug && p.id !== project.id
+    )
+    if (slugConflict) nextErrors.push(`The slug "${finalSlug}" is already used by another project. Choose a different slug.`)
     setErrors(nextErrors)
     if (nextErrors.length) return
     setSaving(true)
     window.setTimeout(() => {
-      repository.saveProject({ ...project, slug: slugify(project.slug || project.title), updatedAt: new Date().toISOString() })
+      repository.saveProject({ ...project, slug: finalSlug, updatedAt: new Date().toISOString() })
       setSaving(false)
       showToast(isNew ? 'Project created in the local demo.' : 'Project changes saved locally.')
       navigate('/admin/projects')

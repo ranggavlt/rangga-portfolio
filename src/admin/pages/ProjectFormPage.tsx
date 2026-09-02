@@ -79,7 +79,7 @@ export default function ProjectFormPage() {
     return next
   })
 
-  const handleSubmit = (event: FormEvent) => {
+  const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
     const nextErrors: string[] = []
     if (!project.title.trim()) nextErrors.push('Title is required.')
@@ -98,12 +98,15 @@ export default function ProjectFormPage() {
     setErrors(nextErrors)
     if (nextErrors.length) return
     setSaving(true)
-    window.setTimeout(() => {
-      repository.saveProject({ ...project, slug: finalSlug, updatedAt: new Date().toISOString() })
-      setSaving(false)
+    try {
+      await repository.saveProject({ ...project, slug: finalSlug, updatedAt: new Date().toISOString() })
       showToast(isNew ? 'Project created in the local demo.' : 'Project changes saved locally.')
       navigate('/admin/projects')
-    }, 400)
+    } catch {
+      showToast('Failed to save project. Please try again.', 'error')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return <>

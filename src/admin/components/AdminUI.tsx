@@ -154,8 +154,8 @@ function AdminLayoutInner() {
   const [resetOpen, setResetOpen] = useState(false)
   const pageTitle = navItems.find((item) => item.to === location.pathname)?.label ?? (location.pathname.includes('/projects/') ? 'Project editor' : 'Admin')
 
-  const handleReset = () => {
-    repository.reset()
+  const handleReset = async () => {
+    await repository.reset()
     setResetOpen(false)
     showToast('Demo data reset to the seeded portfolio.', 'success')
   }

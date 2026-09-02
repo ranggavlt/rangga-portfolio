@@ -9,11 +9,18 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState(data.profile)
   const [saving, setSaving] = useState(false)
 
-  const save = (event: FormEvent) => {
+  const save = async (event: FormEvent) => {
     event.preventDefault()
     if (!profile.fullName.trim() || !profile.professionalTitle.trim() || !profile.email.trim()) return showToast('Name, title, and email are required.', 'error')
     setSaving(true)
-    window.setTimeout(() => { repository.saveProfile(profile); setSaving(false); showToast('Profile settings saved locally.') }, 350)
+    try {
+      await repository.saveProfile(profile)
+      showToast('Profile settings saved locally.')
+    } catch {
+      showToast('Failed to save profile. Please try again.', 'error')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return <>

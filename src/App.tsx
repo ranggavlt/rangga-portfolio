@@ -393,7 +393,7 @@ function ContactSection() {
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [errorMessage, setErrorMessage] = useState('')
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!form.name.trim() || !form.email.trim() || !form.message.trim()) {
       setStatus('error')
@@ -407,8 +407,8 @@ function ContactSection() {
     }
     setStatus('loading')
     setErrorMessage('')
-    window.setTimeout(() => {
-      repository.addMessage({
+    try {
+      await repository.addMessage({
         id: `message-${Date.now()}`,
         sender: form.name.trim(),
         email: form.email.trim(),
@@ -418,7 +418,10 @@ function ContactSection() {
       })
       setStatus('success')
       setForm({ name: '', email: '', message: '' })
-    }, 850)
+    } catch {
+      setStatus('error')
+      setErrorMessage('Something went wrong sending your message. Please try again.')
+    }
   }
 
   return (

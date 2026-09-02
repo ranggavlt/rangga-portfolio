@@ -18,9 +18,9 @@ export default function ProjectsPage() {
     return matchesQuery && matchesStatus
   }).sort((a, b) => sort === 'year' ? b.year.localeCompare(a.year) : sort === 'updated' ? b.updatedAt.localeCompare(a.updatedAt) : a.displayOrder - b.displayOrder), [data.projects, query, sort, status])
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!deleteId) return
-    repository.deleteProject(deleteId)
+    await repository.deleteProject(deleteId)
     setDeleteId(null)
     showToast('Project deleted from the local demo.', 'info')
   }

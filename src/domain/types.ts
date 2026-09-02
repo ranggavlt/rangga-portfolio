@@ -107,34 +107,47 @@ export type PortfolioData = {
 export type RepositoryListener = (data: PortfolioData) => void
 
 export interface PortfolioRepository {
+  // Lifecycle
+  initialize(): Promise<void>
+  refresh(): Promise<void>
+  // Synchronous snapshot + subscription (kept sync for React render performance)
   getSnapshot(): PortfolioData
   subscribe(listener: RepositoryListener): () => void
-  reset(): void
+  // Reset
+  reset(): Promise<void>
+  // Projects
   getProjects(): PortfolioProject[]
   getProject(id: string): PortfolioProject | undefined
-  saveProject(project: PortfolioProject): void
-  deleteProject(id: string): void
+  saveProject(project: PortfolioProject): Promise<void>
+  deleteProject(id: string): Promise<void>
   getProjectImages(projectId: string): ProjectImage[]
-  updateProjectImages(projectId: string, images: [ProjectImage, ProjectImage, ProjectImage]): void
+  updateProjectImages(projectId: string, images: [ProjectImage, ProjectImage, ProjectImage]): Promise<void>
+  // Experience
   getExperience(): ExperienceEntry[]
-  saveExperience(entry: ExperienceEntry): void
-  deleteExperience(id: string): void
+  saveExperience(entry: ExperienceEntry): Promise<void>
+  deleteExperience(id: string): Promise<void>
+  // Education
   getEducation(): EducationEntry[]
-  saveEducation(entry: EducationEntry): void
-  deleteEducation(id: string): void
+  saveEducation(entry: EducationEntry): Promise<void>
+  deleteEducation(id: string): Promise<void>
+  // Organizations
   getOrganizations(): OrganizationEntry[]
-  saveOrganization(entry: OrganizationEntry): void
-  deleteOrganization(id: string): void
+  saveOrganization(entry: OrganizationEntry): Promise<void>
+  deleteOrganization(id: string): Promise<void>
+  // Skills
   getSkills(): SkillGroup[]
-  saveSkillGroup(group: SkillGroup): void
-  deleteSkillGroup(id: string): void
+  saveSkillGroup(group: SkillGroup): Promise<void>
+  deleteSkillGroup(id: string): Promise<void>
+  // Profile
   getProfile(): Profile
-  saveProfile(profile: Profile): void
+  saveProfile(profile: Profile): Promise<void>
+  // Social links
   getSocialLinks(): SocialLink[]
-  saveSocialLink(link: SocialLink): void
-  deleteSocialLink(id: string): void
+  saveSocialLink(link: SocialLink): Promise<void>
+  deleteSocialLink(id: string): Promise<void>
+  // Messages
   getMessages(): ContactMessage[]
-  addMessage(message: ContactMessage): void
-  markMessageRead(id: string): void
-  deleteMessage(id: string): void
+  addMessage(message: ContactMessage): Promise<void>
+  markMessageRead(id: string): Promise<void>
+  deleteMessage(id: string): Promise<void>
 }

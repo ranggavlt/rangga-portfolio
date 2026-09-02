@@ -51,7 +51,10 @@ export class LocalPortfolioRepository implements PortfolioRepository {
     return {
       ...seed,
       ...data,
-      projects: Array.isArray(data.projects) ? data.projects : seed.projects,
+      projects: Array.isArray(data.projects) ? data.projects.map((project) => ({
+        ...project,
+        images: project.images.map((image) => ({ storagePath: null, ...image })) as PortfolioProject['images'],
+      })) : seed.projects,
       experience: Array.isArray(data.experience) ? data.experience : seed.experience,
       education: Array.isArray(data.education) ? data.education : seed.education,
       organizations: Array.isArray(data.organizations) ? data.organizations : seed.organizations,

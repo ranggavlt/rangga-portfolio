@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { mediaService } from '../../media/mediaService'
 import { usePortfolio } from '../../repository/PortfolioProvider'
 import { AdminIcon, ConfirmDialog, EmptyState, PageHeader, StatusBadge, useToast } from '../components/AdminUI'
 
@@ -20,9 +21,20 @@ export default function ProjectsPage() {
 
   const handleDelete = async () => {
     if (!deleteId) return
-    await repository.deleteProject(deleteId)
-    setDeleteId(null)
-    showToast('Project deleted from the local demo.', 'info')
+    const managedPaths = data.projects.find((project) => project.id === deleteId)?.images
+      .map((image) => image.storagePath)
+      .filter((path): path is string => Boolean(path)) ?? []
+    try {
+      await repository.deleteProject(deleteId)
+      setDeleteId(null)
+      showToast('Project deleted.', 'info')
+      if (repository.mode === 'supabase' && mediaService && managedPaths.length) {
+        try { await mediaService.removeProjectImages(managedPaths) }
+        catch { showToast('Project deleted, but managed image cleanup needs attention.', 'info') }
+      }
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : 'Could not delete project.', 'error')
+    }
   }
 
   return <>
@@ -30,6 +42,6 @@ export default function ProjectsPage() {
     <div className="table-toolbar"><div className="admin-eyebrow">{projects.length} result{projects.length === 1 ? '' : 's'}</div><div className="toolbar-filters"><div className="search-field"><AdminIcon name="search" size={15} /><input className="admin-input" type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search projects" aria-label="Search projects" /></div><select className="admin-select" value={status} onChange={(event) => setStatus(event.target.value as typeof status)} aria-label="Filter project status"><option value="all">All status</option><option value="published">Published</option><option value="draft">Draft</option></select><select className="admin-select" value={sort} onChange={(event) => setSort(event.target.value as typeof sort)} aria-label="Sort projects"><option value="order">Display order</option><option value="year">Year</option><option value="updated">Last updated</option></select></div></div>
     {projects.length === 0 ? <EmptyState title="No projects found" description="Try a different search or create the first project in this local workspace." action={<Link className="admin-button button-dark" to="/admin/projects/new">Create project</Link>} /> : <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>Project</th><th>Category</th><th>Year</th><th>Status</th><th>Order</th><th>Updated</th><th><span className="visually-hidden">Actions</span></th></tr></thead><tbody>{projects.map((project) => <tr key={project.id}><td><div className="table-project"><div className="table-thumb"><img src={project.images[0].src} alt="" /></div><div><strong>{project.title}</strong><span>/{project.slug}</span></div></div></td><td className="muted-cell">{project.category}</td><td>{project.year}</td><td><StatusBadge published={project.published} /></td><td>{project.displayOrder}</td><td className="muted-cell">{new Date(project.updatedAt).toLocaleDateString('en', { month: 'short', day: 'numeric', year: 'numeric' })}</td><td><div className="table-actions"><button className="table-icon-button" type="button" onClick={() => navigate(`/admin/projects/${project.id}/edit`)} aria-label={`Edit ${project.title}`}><AdminIcon name="edit" size={14} /></button><button className="table-icon-button danger" type="button" onClick={() => setDeleteId(project.id)} aria-label={`Delete ${project.title}`}><AdminIcon name="trash" size={14} /></button></div></td></tr>)}</tbody></table></div>}
     <div className="mobile-project-cards">{projects.map((project) => <article className="admin-card mobile-project-card" key={project.id}><div className="table-project"><div className="table-thumb"><img src={project.images[0].src} alt="" /></div><div><strong>{project.title}</strong><span>{project.category} · {project.year}</span></div></div><div><StatusBadge published={project.published} /><span className="muted-cell">Order {project.displayOrder}</span></div><div className="table-actions"><button className="admin-button button-quiet" type="button" onClick={() => navigate(`/admin/projects/${project.id}/edit`)}>Edit</button><button className="admin-button button-quiet" type="button" onClick={() => setDeleteId(project.id)}>Delete</button></div></article>)}</div>
-    <ConfirmDialog open={Boolean(deleteId)} title="Delete this project?" description="The project will be removed from the local demo repository. This cannot be undone unless you reset the demo data." confirmLabel="Delete project" danger onConfirm={handleDelete} onCancel={() => setDeleteId(null)} />
+    <ConfirmDialog open={Boolean(deleteId)} title="Delete this project?" description={repository.mode === 'local' ? 'The project will be removed from the local demo repository. This cannot be undone unless you reset the demo data.' : 'The project will be removed from the database. Its managed images will be cleaned up after the database deletion succeeds.'} confirmLabel="Delete project" danger onConfirm={handleDelete} onCancel={() => setDeleteId(null)} />
   </>
 }

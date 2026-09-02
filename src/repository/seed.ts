@@ -29,6 +29,7 @@ export const createSeedPortfolioData = (): PortfolioData => ({
     images: project.images.map((image, imageIndex) => ({
       id: `${project.id}-image-${imageIndex + 1}`,
       src: image.src,
+      storagePath: null,
       alt: image.alt,
       caption: image.caption,
       position: (imageIndex + 1) as ProjectImage['position'],
@@ -78,7 +79,9 @@ export const createSeedPortfolioData = (): PortfolioData => ({
     availabilityText: 'Available for select projects',
     email: 'hello@rangga.dev',
     portraitUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=1100&q=86',
+    portraitStoragePath: null,
     cvUrl: '',
+    cvStoragePath: null,
     footerText: 'Designed and built with intention.',
   },
   socialLinks: socialLinks.map((link, index) => ({

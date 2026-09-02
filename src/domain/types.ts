@@ -1,6 +1,7 @@
 export type ProjectImage = {
   id: string
   src: string
+  storagePath?: string | null
   alt: string
   caption: string
   position: 1 | 2 | 3
@@ -72,7 +73,9 @@ export type Profile = {
   availabilityText: string
   email: string
   portraitUrl: string
+  portraitStoragePath?: string | null
   cvUrl: string
+  cvStoragePath?: string | null
   footerText: string
 }
 

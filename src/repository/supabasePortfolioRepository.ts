@@ -15,7 +15,7 @@ const projectFromRow = (row: ProjectRow, images: ProjectImageRow[]): PortfolioPr
   tech: row.tech ?? [], liveUrl: row.live_url, sourceUrl: row.source_url,
   published: row.status === 'published', displayOrder: row.display_order, updatedAt: row.updated_at,
   images: images.filter((image) => image.project_id === row.id).sort((a, b) => a.position - b.position).map((image) => ({
-    id: image.id, src: image.src, alt: image.alt, caption: image.caption, position: image.position as ProjectImage['position'],
+    id: image.id, src: image.src, storagePath: image.storage_path ?? null, alt: image.alt, caption: image.caption, position: image.position as ProjectImage['position'],
   })) as PortfolioProject['images'],
 })
 
@@ -23,7 +23,8 @@ const profileFromRow = (row: ProfileRow): Profile => ({
   fullName: row.full_name, professionalTitle: row.professional_title, heroEyebrow: row.hero_eyebrow,
   heroHeading: row.hero_heading, heroDescription: row.hero_description, aboutHeading: row.about_heading,
   aboutBiography: row.about_biography, aboutSecondary: row.about_secondary, location: row.location,
-  availabilityText: row.availability_text, email: row.email, portraitUrl: row.portrait_url, cvUrl: row.cv_url,
+  availabilityText: row.availability_text, email: row.email, portraitUrl: row.portrait_url,
+  portraitStoragePath: row.portrait_storage_path ?? null, cvUrl: row.cv_url, cvStoragePath: row.cv_storage_path ?? null,
   footerText: row.footer_text,
 })
 
@@ -73,24 +74,33 @@ export class SupabasePortfolioRepository implements PortfolioRepository {
 
   async saveProject(project: PortfolioProject) {
     this.assertThreeImages(project.images)
-    const payload = {
-      slug: project.slug, title: project.title, year: project.year, category: project.category,
-      short_description: project.shortDescription, full_description: project.fullDescription, role: project.role,
-      tech: project.tech, live_url: project.liveUrl, source_url: project.sourceUrl,
-      status: project.published ? 'published' as const : 'draft' as const, display_order: project.displayOrder,
-    }
     const existing = this.data.projects.some((item) => item.id === project.id)
-    const query = existing
-      ? this.client.from('projects').update(payload).eq('id', project.id).select('id').single()
-      : this.client.from('projects').insert(payload).select('id').single()
-    const { data, error } = await query
+    const { error } = await this.client.rpc('save_project_with_images', {
+      p_project_id: existing ? project.id : null,
+      p_slug: project.slug,
+      p_title: project.title,
+      p_year: project.year,
+      p_category: project.category,
+      p_short_description: project.shortDescription,
+      p_full_description: project.fullDescription,
+      p_role: project.role,
+      p_tech: project.tech,
+      p_live_url: project.liveUrl,
+      p_source_url: project.sourceUrl,
+      p_status: project.published ? 'published' : 'draft',
+      p_display_order: project.displayOrder,
+      p_images: project.images.map((image) => ({ src: image.src, storage_path: image.storagePath ?? null, alt: image.alt, caption: image.caption, position: image.position })),
+    })
     if (error) throw new Error(`Could not save project: ${error.message}`)
-    await this.replaceImages(data.id, project.images)
     await this.refresh()
   }
 
   async deleteProject(id: string) { await this.remove('projects', id, 'project'); await this.refresh() }
-  async updateProjectImages(projectId: string, images: [ProjectImage, ProjectImage, ProjectImage]) { this.assertThreeImages(images); await this.replaceImages(projectId, images); await this.refresh() }
+  async updateProjectImages(projectId: string, images: [ProjectImage, ProjectImage, ProjectImage]) {
+    const project = this.getProject(projectId)
+    if (!project) throw new Error('Could not update images because the project was not found.')
+    await this.saveProject({ ...project, images })
+  }
 
   getExperience() { return byOrder(this.data.experience) }
   async saveExperience(entry: ExperienceEntry) { await this.saveOrdered('experiences', entry.id, this.data.experience.some((x) => x.id === entry.id), { period: entry.period, company: entry.company, role: entry.role, description: entry.description, published: entry.published, display_order: entry.displayOrder }, 'experience'); await this.refresh() }
@@ -110,7 +120,7 @@ export class SupabasePortfolioRepository implements PortfolioRepository {
 
   getProfile() { return clone(this.data.profile) }
   async saveProfile(profile: Profile) {
-    const payload = { full_name: profile.fullName, professional_title: profile.professionalTitle, hero_eyebrow: profile.heroEyebrow, hero_heading: profile.heroHeading, hero_description: profile.heroDescription, about_heading: profile.aboutHeading, about_biography: profile.aboutBiography, about_secondary: profile.aboutSecondary, location: profile.location, availability_text: profile.availabilityText, email: profile.email, portrait_url: profile.portraitUrl, cv_url: profile.cvUrl, footer_text: profile.footerText }
+    const payload = { full_name: profile.fullName, professional_title: profile.professionalTitle, hero_eyebrow: profile.heroEyebrow, hero_heading: profile.heroHeading, hero_description: profile.heroDescription, about_heading: profile.aboutHeading, about_biography: profile.aboutBiography, about_secondary: profile.aboutSecondary, location: profile.location, availability_text: profile.availabilityText, email: profile.email, portrait_url: profile.portraitUrl, portrait_storage_path: profile.portraitStoragePath ?? null, cv_url: profile.cvUrl, cv_storage_path: profile.cvStoragePath ?? null, footer_text: profile.footerText }
     const { data: current, error: readError } = await this.client.from('profiles').select('id').limit(1).maybeSingle()
     if (readError) throw new Error(`Could not locate the profile: ${readError.message}`)
     const { error } = current ? await this.client.from('profiles').update(payload).eq('id', current.id) : await this.client.from('profiles').insert(payload)
@@ -145,14 +155,6 @@ export class SupabasePortfolioRepository implements PortfolioRepository {
   private async remove(table: 'projects' | 'experiences' | 'education' | 'organizations' | 'skills' | 'social_links' | 'contact_messages', id: string, label: string) {
     const { error } = await this.client.from(table).delete().eq('id', id)
     if (error) throw new Error(`Could not delete ${label}: ${error.message}`)
-  }
-
-  private async replaceImages(projectId: string, images: [ProjectImage, ProjectImage, ProjectImage]) {
-    const { error } = await this.client.from('project_images').upsert(
-      images.map((image) => ({ project_id: projectId, src: image.src, alt: image.alt, caption: image.caption, position: image.position })),
-      { onConflict: 'project_id,position' },
-    )
-    if (error) throw new Error(`Could not save project images: ${error.message}`)
   }
 
   private assertThreeImages(images: ProjectImage[]): asserts images is [ProjectImage, ProjectImage, ProjectImage] {

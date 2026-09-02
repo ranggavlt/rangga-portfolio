@@ -1,0 +1,31 @@
+import { ChangeEvent, ReactNode, useId, useState } from 'react'
+
+export function AdminField({ label, hint, error, children }: { label: string; hint?: string; error?: string; children: ReactNode }) {
+  const id = useId()
+  return <div className={`admin-field ${error ? 'is-invalid' : ''}`}><label htmlFor={id}>{label}</label>{children}{hint && <small>{hint}</small>}{error && <span className="field-error">{error}</span>}</div>
+}
+
+export function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) { return <input {...props} className={`admin-input ${props.className ?? ''}`} /> }
+export function TextArea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) { return <textarea {...props} className={`admin-textarea ${props.className ?? ''}`} /> }
+export function SelectInput(props: React.SelectHTMLAttributes<HTMLSelectElement>) { return <select {...props} className={`admin-select ${props.className ?? ''}`} /> }
+
+export function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (checked: boolean) => void }) {
+  return <label className="switch-field"><span>{label}</span><span className={`switch ${checked ? 'is-on' : ''}`}><input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} aria-label={label} /></span></label>
+}
+
+export function TagsInput({ value, onChange }: { value: string[]; onChange: (value: string[]) => void }) {
+  const [input, setInput] = useState('')
+  const addTag = () => {
+    const tag = input.trim().replace(/,$/, '')
+    if (tag && !value.includes(tag)) onChange([...value, tag])
+    setInput('')
+  }
+  const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
+    if (event.target.value.endsWith(',')) { setInput(event.target.value.slice(0, -1)); addTag(); return }
+    setInput(event.target.value)
+  }
+  return <div className="tags-editor" role="list" aria-label="Technology tags">
+    {value.map((tag) => <span className="tag-chip" role="listitem" key={tag}>{tag}<button type="button" onClick={() => onChange(value.filter((item) => item !== tag))} aria-label={`Remove ${tag}`}>×</button></span>)}
+    <input value={input} onChange={handleChange} onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); addTag() } }} placeholder="Type and press Enter" aria-label="Add technology tag" />
+  </div>
+}

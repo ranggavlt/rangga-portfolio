@@ -21,7 +21,9 @@ export function AuthProvider({ service, onSessionChange, children }: { service: 
     let cancelled = false
     const unsubscribe = service.subscribe((nextSession) => {
       setSession(nextSession)
-      void onSessionChange?.()
+      void Promise.resolve(onSessionChange?.()).catch((err: unknown) => {
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Portfolio refresh failed after the authentication session changed.')
+      })
     })
     service.initialize()
       .catch((err: unknown) => { if (!cancelled) setError(err instanceof Error ? err.message : 'Authentication initialization failed.') })

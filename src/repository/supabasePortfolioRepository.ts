@@ -1,13 +1,21 @@
 import { SupabaseClient } from '@supabase/supabase-js'
 import {
   ContactMessage, EducationEntry, ExperienceEntry, OrganizationEntry, PortfolioData, PortfolioProject,
-  PortfolioRepository, Profile, ProjectImage, RepositoryListener, SkillGroup, SocialLink,
+  PortfolioRepository, Profile, ProjectImage, ReorderableSection, RepositoryListener, SkillGroup, SocialLink,
 } from '../domain/types'
 import { Database, EducationRow, ExperienceRow, OrganizationRow, ProfileRow, ProjectImageRow, ProjectRow, SkillRow, SocialLinkRow, ContactMessageRow } from '../lib/database.types'
 import { createSeedPortfolioData } from './seed'
 
 const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value)) as T
 const byOrder = <T extends { displayOrder: number }>(items: T[]) => [...items].sort((a, b) => a.displayOrder - b.displayOrder)
+
+const migrationError = (message: string, phase: 4 | 5, fallback: string) => {
+  const normalized = message.toLowerCase()
+  if (normalized.includes('schema cache') || normalized.includes('does not exist') || normalized.includes('could not find the function')) {
+    return new Error(`${fallback}: the required Phase ${phase} Supabase migration is not applied. Run the committed migration in the Supabase Dashboard and try again.`)
+  }
+  return new Error(`${fallback}: ${message}`)
+}
 
 const projectFromRow = (row: ProjectRow, images: ProjectImageRow[]): PortfolioProject => ({
   id: row.id, slug: row.slug, title: row.title, year: row.year, category: row.category,
@@ -46,10 +54,17 @@ export class SupabasePortfolioRepository implements PortfolioRepository {
       this.client.auth.getSession(),
       publicDataPromise,
     ])
-    if (authError) throw new Error(`Could not inspect the Supabase session while refreshing portfolio data: ${authError.message}`)
+    if (authError) {
+      this.clearMessages()
+      throw new Error(`Could not inspect the Supabase session while refreshing portfolio data: ${authError.message}`)
+    }
 
     const [projects, images, profile, experience, education, organizations, skills, socialLinks] = publicData
-    const messages = authData.session ? await this.read('contact_messages') : []
+    let messages: unknown[] = []
+    if (authData.session) {
+      try { messages = await this.read('contact_messages') }
+      catch (error) { this.clearMessages(); throw error }
+    }
     const seed = createSeedPortfolioData()
     this.data = {
       projects: (projects as ProjectRow[]).map((project) => projectFromRow(project, images as ProjectImageRow[])),
@@ -67,6 +82,14 @@ export class SupabasePortfolioRepository implements PortfolioRepository {
   getSnapshot() { return clone(this.data) }
   subscribe(listener: RepositoryListener) { this.listeners.add(listener); return () => this.listeners.delete(listener) }
   async reset() { throw new Error('Reset is available only in LocalStorage demo mode.') }
+  async reorderItems(section: ReorderableSection, orderedIds: string[]) {
+    const sectionMap: Record<ReorderableSection, 'experience' | 'education' | 'organizations' | 'skills' | 'social_links'> = {
+      experience: 'experience', education: 'education', organizations: 'organizations', skills: 'skills', socialLinks: 'social_links',
+    }
+    const { error } = await this.client.rpc('reorder_portfolio_items', { p_section: sectionMap[section], p_ordered_ids: orderedIds })
+    if (error) throw migrationError(error.message, 5, 'Could not update display order')
+    await this.refresh()
+  }
 
   getProjects() { return byOrder(this.data.projects) }
   getProject(id: string) { return this.data.projects.find((project) => project.id === id) }
@@ -91,7 +114,7 @@ export class SupabasePortfolioRepository implements PortfolioRepository {
       p_display_order: project.displayOrder,
       p_images: project.images.map((image) => ({ src: image.src, storage_path: image.storagePath ?? null, alt: image.alt, caption: image.caption, position: image.position })),
     })
-    if (error) throw new Error(`Could not save project: ${error.message}`)
+    if (error) throw migrationError(error.message, 4, 'Could not save project')
     await this.refresh()
   }
 
@@ -124,7 +147,7 @@ export class SupabasePortfolioRepository implements PortfolioRepository {
     const { data: current, error: readError } = await this.client.from('profiles').select('id').limit(1).maybeSingle()
     if (readError) throw new Error(`Could not locate the profile: ${readError.message}`)
     const { error } = current ? await this.client.from('profiles').update(payload).eq('id', current.id) : await this.client.from('profiles').insert(payload)
-    if (error) throw new Error(`Could not save profile: ${error.message}`)
+    if (error) throw migrationError(error.message, 4, 'Could not save profile')
     await this.refresh()
   }
 
@@ -161,6 +184,12 @@ export class SupabasePortfolioRepository implements PortfolioRepository {
     if (images.length !== 3 || new Set(images.map((image) => image.position)).size !== 3 || images.some((image) => image.position < 1 || image.position > 3)) {
       throw new Error('Each project must have exactly three images in positions 1, 2, and 3.')
     }
+  }
+
+  private clearMessages() {
+    if (!this.data.messages.length) return
+    this.data = { ...this.data, messages: [] }
+    this.emit()
   }
 
   private emit() { this.listeners.forEach((listener) => listener(this.getSnapshot())) }

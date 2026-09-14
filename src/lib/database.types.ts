@@ -52,6 +52,13 @@ export type Database = {
         }
         Returns: string
       }
+      reorder_portfolio_items: {
+        Args: {
+          p_section: 'experience' | 'education' | 'organizations' | 'skills' | 'social_links'
+          p_ordered_ids: string[]
+        }
+        Returns: undefined
+      }
     }
     Enums: { project_status: 'draft' | 'published' }
     CompositeTypes: Record<string, never>

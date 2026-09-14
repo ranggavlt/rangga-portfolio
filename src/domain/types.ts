@@ -108,12 +108,14 @@ export type PortfolioData = {
 }
 
 export type RepositoryListener = (data: PortfolioData) => void
+export type ReorderableSection = 'experience' | 'education' | 'organizations' | 'skills' | 'socialLinks'
 
 export interface PortfolioRepository {
   readonly mode: 'local' | 'supabase'
   // Lifecycle
   initialize(): Promise<void>
   refresh(): Promise<void>
+  reorderItems(section: ReorderableSection, orderedIds: string[]): Promise<void>
   // Synchronous snapshot + subscription (kept sync for React render performance)
   getSnapshot(): PortfolioData
   subscribe(listener: RepositoryListener): () => void

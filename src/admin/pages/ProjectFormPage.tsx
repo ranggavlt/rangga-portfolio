@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { PortfolioProject, ProjectImage } from '../../domain/types'
 import { mediaService, validateProjectImage } from '../../media/mediaService'
 import { usePortfolio } from '../../repository/PortfolioProvider'
+import { isHttpUrl } from '../lib/validation'
 import { AdminIcon, PageHeader, useToast } from '../components/AdminUI'
 import { AdminField, TagsInput, TextArea, TextInput, Toggle } from '../components/FormControls'
 
@@ -110,10 +111,18 @@ export default function ProjectFormPage() {
     const finalSlug = slugify(project.slug || project.title)
     if (!project.title.trim()) nextErrors.push('Title is required.')
     if (!finalSlug) nextErrors.push('Slug is required.')
+    if (!project.year.trim()) nextErrors.push('Year is required.')
     if (!project.category.trim()) nextErrors.push('Category is required.')
     if (!project.shortDescription.trim()) nextErrors.push('Short description is required.')
+    if (!project.fullDescription.trim()) nextErrors.push('Full description is required.')
+    if (!project.role.trim()) nextErrors.push('Role is required.')
+    if (!Number.isFinite(project.displayOrder) || project.displayOrder < 1) nextErrors.push('Display order must be 1 or greater.')
+    if (!isHttpUrl(project.liveUrl)) nextErrors.push('Live website URL must start with http:// or https://.')
+    if (!isHttpUrl(project.sourceUrl)) nextErrors.push('Source-code URL must start with http:// or https://.')
+    if (project.images.length !== 3) nextErrors.push('Each project must have exactly three gallery images.')
     project.images.forEach((image, index) => {
       if ((!image.src.trim() && !pendingFiles[image.position]) || !image.alt.trim() || !image.caption.trim()) nextErrors.push(`Gallery image ${index + 1} needs an image, alt text, and caption.`)
+      if (!pendingFiles[image.position] && image.src.trim() && !isHttpUrl(image.src, false)) nextErrors.push(`Gallery image ${index + 1} URL must start with http:// or https://.`)
     })
     for (const file of Object.values(pendingFiles)) {
       if (!file) continue

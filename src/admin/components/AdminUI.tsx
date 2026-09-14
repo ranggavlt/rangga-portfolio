@@ -71,11 +71,11 @@ export function EmptyState({ title, description, action }: { title: string; desc
   return <div className="admin-empty"><div className="empty-mark">—</div><h2>{title}</h2><p>{description}</p>{action}</div>
 }
 
-export function LoadingState() { return <div className="admin-loading"><span className="loading-line" /> Loading demo data…</div> }
+export function LoadingState() { return <div className="admin-loading"><span className="loading-line" /> Loading portfolio data…</div> }
 
 export function ErrorState({ message }: { message: string }) { return <div className="admin-error">{message}</div> }
 
-export function ConfirmDialog({ open, title, description, confirmLabel = 'Confirm', onConfirm, onCancel, danger = false }: { open: boolean; title: string; description: string; confirmLabel?: string; onConfirm: () => void; onCancel: () => void; danger?: boolean }) {
+export function ConfirmDialog({ open, title, description, confirmLabel = 'Confirm', onConfirm, onCancel, danger = false, busy = false }: { open: boolean; title: string; description: string; confirmLabel?: string; onConfirm: () => void | Promise<void>; onCancel: () => void; danger?: boolean; busy?: boolean }) {
   const cancelRef = useRef<HTMLButtonElement>(null)
   const confirmRef = useRef<HTMLButtonElement>(null)
   const returnFocusRef = useRef<Element | null>(null)
@@ -100,7 +100,7 @@ export function ConfirmDialog({ open, title, description, confirmLabel = 'Confir
   useEffect(() => {
     if (!open) return
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') { event.preventDefault(); onCancel() }
+      if (event.key === 'Escape' && !busy) { event.preventDefault(); onCancel() }
       // Focus trap — Tab cycles only between Cancel and Confirm
       if (event.key === 'Tab') {
         const first = cancelRef.current
@@ -115,24 +115,25 @@ export function ConfirmDialog({ open, title, description, confirmLabel = 'Confir
     }
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [open, onCancel])
+  }, [busy, open, onCancel])
 
   if (!open) return null
   return (
-    <div className="dialog-backdrop" role="presentation" onMouseDown={onCancel}>
+    <div className="dialog-backdrop" role="presentation" onMouseDown={() => { if (!busy) onCancel() }}>
       <div
         className="confirm-dialog"
         role="dialog"
         aria-modal="true"
         aria-labelledby="confirm-title"
+        aria-busy={busy}
         onMouseDown={(event) => event.stopPropagation()}
       >
         <div className="admin-eyebrow">Confirmation</div>
         <h2 id="confirm-title">{title}</h2>
         <p>{description}</p>
         <div className="dialog-actions">
-          <button ref={cancelRef} className="admin-button button-quiet" type="button" onClick={onCancel}>Cancel</button>
-          <button ref={confirmRef} className={`admin-button ${danger ? 'button-danger' : 'button-dark'}`} type="button" onClick={onConfirm}>{confirmLabel}</button>
+          <button ref={cancelRef} className="admin-button button-quiet" type="button" onClick={onCancel} disabled={busy}>Cancel</button>
+          <button ref={confirmRef} className={`admin-button ${danger ? 'button-danger' : 'button-dark'}`} type="button" onClick={() => { void onConfirm() }} disabled={busy}>{confirmLabel}</button>
         </div>
       </div>
     </div>

@@ -16,11 +16,11 @@ export function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) { 
 export function TextArea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) { return <textarea {...props} className={`admin-textarea ${props.className ?? ''}`} /> }
 export function SelectInput(props: React.SelectHTMLAttributes<HTMLSelectElement>) { return <select {...props} className={`admin-select ${props.className ?? ''}`} /> }
 
-export function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (checked: boolean) => void }) {
-  return <label className="switch-field"><span>{label}</span><span className={`switch ${checked ? 'is-on' : ''}`}><input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} aria-label={label} /></span></label>
+export function Toggle({ label, checked, onChange, disabled = false }: { label: string; checked: boolean; onChange: (checked: boolean) => void; disabled?: boolean }) {
+  return <label className={`switch-field ${disabled ? 'is-disabled' : ''}`}><span>{label}</span><span className={`switch ${checked ? 'is-on' : ''}`}><input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} aria-label={label} disabled={disabled} /></span></label>
 }
 
-export function TagsInput({ value, onChange }: { value: string[]; onChange: (value: string[]) => void }) {
+export function TagsInput({ value, onChange, disabled = false }: { value: string[]; onChange: (value: string[]) => void; disabled?: boolean }) {
   const [input, setInput] = useState('')
   const addTag = () => {
     const tag = input.trim().replace(/,$/, '')
@@ -32,7 +32,7 @@ export function TagsInput({ value, onChange }: { value: string[]; onChange: (val
     setInput(event.target.value)
   }
   return <div className="tags-editor" role="list" aria-label="Technology tags">
-    {value.map((tag) => <span className="tag-chip" role="listitem" key={tag}>{tag}<button type="button" onClick={() => onChange(value.filter((item) => item !== tag))} aria-label={`Remove ${tag}`}>×</button></span>)}
-    <input value={input} onChange={handleChange} onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); addTag() } }} placeholder="Type and press Enter" aria-label="Add technology tag" />
+    {value.map((tag) => <span className="tag-chip" role="listitem" key={tag}>{tag}<button type="button" onClick={() => onChange(value.filter((item) => item !== tag))} aria-label={`Remove ${tag}`} disabled={disabled}>×</button></span>)}
+    <input value={input} onChange={handleChange} onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); addTag() } }} placeholder="Type and press Enter" aria-label="Add technology tag" disabled={disabled} />
   </div>
 }

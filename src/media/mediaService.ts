@@ -40,6 +40,25 @@ export const validateCvPdf = (file: File) => {
 
 const safeReference = (value: string) => value.toLowerCase().trim().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80) || 'project'
 
+const storageFailure = (action: 'upload' | 'remove', bucket: string, message: string) => {
+  const normalized = message.toLowerCase()
+  const label = bucket === PORTFOLIO_DOCUMENTS_BUCKET ? 'CV document' : 'image'
+  if (normalized.includes('bucket not found') || normalized.includes('not found')) {
+    return new Error(`Could not ${action} ${label}: the Supabase Storage bucket "${bucket}" is missing. Apply the Phase 4 storage migration in the Supabase Dashboard.`)
+  }
+  if (normalized.includes('row-level security') || normalized.includes('unauthorized') || normalized.includes('permission') || normalized.includes('403')) {
+    return new Error(`Could not ${action} ${label}: Supabase Storage denied the request. Verify the signed-in user is listed in admin_users and the Phase 4 storage policies are applied.`)
+  }
+  if (normalized.includes('mime') || normalized.includes('content type')) {
+    return new Error(`Could not ${action} ${label}: Supabase Storage rejected the file type.`)
+  }
+  if (normalized.includes('size') || normalized.includes('too large')) {
+    return new Error(`Could not ${action} ${label}: Supabase Storage rejected the file size.`)
+  }
+  const sanitized = message.replace(/https?:\/\/\S+/g, '[redacted-url]').replace(/eyJ[A-Za-z0-9._-]+/g, '[redacted-token]').slice(0, 240)
+  return new Error(`Could not ${action} ${label}: ${sanitized || 'Supabase Storage rejected the request.'}`)
+}
+
 export class SupabaseMediaService {
   constructor(private readonly client: SupabaseClient<Database>) {}
 
@@ -70,7 +89,7 @@ export class SupabaseMediaService {
       contentType: file.type,
       cacheControl: '31536000',
     })
-    if (error) throw new Error(`Could not upload ${file.type.startsWith('image/') ? 'image' : 'document'}: ${error.message}`)
+    if (error) throw storageFailure('upload', bucket, error.message)
     const { data } = this.client.storage.from(bucket).getPublicUrl(path)
     return { publicUrl: data.publicUrl, storagePath: path }
   }
@@ -79,7 +98,7 @@ export class SupabaseMediaService {
     const managedPaths = [...new Set(paths.filter(Boolean))]
     if (!managedPaths.length) return
     const { error } = await this.client.storage.from(bucket).remove(managedPaths)
-    if (error) throw new Error(`Could not remove replaced media: ${error.message}`)
+    if (error) throw storageFailure('remove', bucket, error.message)
   }
 }
 

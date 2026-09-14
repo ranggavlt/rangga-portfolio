@@ -1,20 +1,22 @@
+import { lazy, Suspense } from 'react'
 import { Link, Navigate, Outlet, Route, Routes } from 'react-router-dom'
 import App from './App'
 import { useAuth } from './auth/AuthProvider'
-import { AdminLayout } from './admin/components/AdminUI'
-import LoginPage from './admin/pages/LoginPage'
-import DashboardPage from './admin/pages/DashboardPage'
-import ProjectsPage from './admin/pages/ProjectsPage'
-import ProjectFormPage from './admin/pages/ProjectFormPage'
-import ExperiencePage from './admin/pages/ExperiencePage'
-import EducationPage from './admin/pages/EducationPage'
-import OrganizationsPage from './admin/pages/OrganizationsPage'
-import SkillsPage from './admin/pages/SkillsPage'
-import ProfilePage from './admin/pages/ProfilePage'
-import SocialLinksPage from './admin/pages/SocialLinksPage'
-import MessagesPage from './admin/pages/MessagesPage'
 import PublicProjectPlaceholder from './pages/PublicProjectPlaceholder'
 import NotFoundPage from './pages/NotFoundPage'
+
+const AdminLayout = lazy(() => import('./admin/components/AdminUI').then((module) => ({ default: module.AdminLayout })))
+const LoginPage = lazy(() => import('./admin/pages/LoginPage'))
+const DashboardPage = lazy(() => import('./admin/pages/DashboardPage'))
+const ProjectsPage = lazy(() => import('./admin/pages/ProjectsPage'))
+const ProjectFormPage = lazy(() => import('./admin/pages/ProjectFormPage'))
+const ExperiencePage = lazy(() => import('./admin/pages/ExperiencePage'))
+const EducationPage = lazy(() => import('./admin/pages/EducationPage'))
+const OrganizationsPage = lazy(() => import('./admin/pages/OrganizationsPage'))
+const SkillsPage = lazy(() => import('./admin/pages/SkillsPage'))
+const ProfilePage = lazy(() => import('./admin/pages/ProfilePage'))
+const SocialLinksPage = lazy(() => import('./admin/pages/SocialLinksPage'))
+const MessagesPage = lazy(() => import('./admin/pages/MessagesPage'))
 
 function ProtectedAdminRoute() {
   const { session, loading, error } = useAuth()
@@ -24,11 +26,11 @@ function ProtectedAdminRoute() {
 }
 
 function AdminNotFound() {
-  return <div className="admin-not-found"><div className="admin-eyebrow">Admin / 404</div><h1>Unknown admin page.</h1><p>This route is not part of the local demo workspace.</p><Link className="admin-button button-dark" to="/admin">Back to overview</Link></div>
+  return <div className="admin-not-found"><div className="admin-eyebrow">Admin / 404</div><h1>Unknown admin page.</h1><p>This route is not part of the portfolio admin workspace.</p><Link className="admin-button button-dark" to="/admin">Back to overview</Link></div>
 }
 
 export function PortfolioRouter() {
-  return <Routes>
+  return <Suspense fallback={<div className="route-loading" role="status">Loading page…</div>}><Routes>
     <Route path="/" element={<App />} />
     <Route path="/projects/:slug" element={<PublicProjectPlaceholder />} />
     <Route path="/admin/login" element={<LoginPage />} />
@@ -49,5 +51,5 @@ export function PortfolioRouter() {
       </Route>
     </Route>
     <Route path="*" element={<NotFoundPage />} />
-  </Routes>
+  </Routes></Suspense>
 }

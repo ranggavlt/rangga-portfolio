@@ -9,6 +9,7 @@ import {
   Profile,
   ProjectImage,
   RepositoryListener,
+  ReorderableSection,
   SkillGroup,
   SocialLink,
 } from '../domain/types'
@@ -77,6 +78,16 @@ export class LocalPortfolioRepository implements PortfolioRepository {
   // will replace these with real async fetches.
   async initialize(): Promise<void> { this.data = this.read() }
   async refresh(): Promise<void> { this.data = this.read(); this.listeners.forEach((listener) => listener(this.getSnapshot())) }
+  async reorderItems(section: ReorderableSection, orderedIds: string[]): Promise<void> {
+    const key = section === 'socialLinks' ? 'socialLinks' : section
+    const items = this.data[key]
+    const currentIds = items.map((item) => item.id)
+    if (orderedIds.length !== currentIds.length || new Set(orderedIds).size !== orderedIds.length || currentIds.some((id) => !orderedIds.includes(id))) {
+      throw new Error('Could not reorder items because the list changed. Refresh and try again.')
+    }
+    const order = new Map(orderedIds.map((id, index) => [id, index + 1]))
+    this.commit({ ...this.data, [key]: items.map((item) => ({ ...item, displayOrder: order.get(item.id) ?? item.displayOrder })) })
+  }
 
   // ── Synchronous reads ──────────────────────────────────────────────────────
   getSnapshot() { return clone(this.data) }

@@ -160,7 +160,7 @@ function ProjectGallery({ project }: { project: PortfolioProject }) {
               onPointerCancel={offset === 0 ? () => setDragStart(null) : undefined}
               onKeyDown={offset === 0 ? handleKeyDown : undefined}
             >
-              <img src={image.src} alt={`${project.title}: ${image.alt}`} draggable="false" />
+              <img src={image.src} alt={`${project.title}: ${image.alt}`} draggable="false" width="1600" height="900" />
               {offset === 0 && <span className="image-index">0{index + 1}</span>}
             </div>
           )
@@ -173,7 +173,7 @@ function ProjectGallery({ project }: { project: PortfolioProject }) {
           <span>{project.images[activeIndex].caption}</span>
         </div>
         <div className="gallery-controls">
-          <span className="gallery-count" aria-live="polite">{String(activeIndex + 1).padStart(2, '0')} <i>/</i> 03</span>
+          <span className="gallery-count" aria-live="polite">{String(activeIndex + 1).padStart(2, '0')} <i>/</i> {String(project.images.length).padStart(2, '0')}</span>
           <button type="button" className="icon-button" onClick={goPrevious} aria-label="Previous project image"><Icon name="arrow-left" size={17} /></button>
           <button type="button" className="icon-button" onClick={goNext} aria-label="Next project image"><Icon name="arrow-right" size={17} /></button>
         </div>
@@ -216,8 +216,12 @@ function ProjectsSection() {
                     {project.tech.map((tag) => <span role="listitem" key={tag}>{tag}</span>)}
                   </div>
                   <div className="project-links">
-                    <a href={project.liveUrl} target="_blank" rel="noreferrer">Visit live site <Icon name="arrow-up-right" size={16} /></a>
-                    <a href={project.sourceUrl} target="_blank" rel="noreferrer">Source code <Icon name="arrow-up-right" size={16} /></a>
+                    {project.liveUrl && !project.liveUrl.includes('example.com') && (
+                      <a href={project.liveUrl} target="_blank" rel="noreferrer">Visit live site <Icon name="arrow-up-right" size={16} /></a>
+                    )}
+                    {project.sourceUrl && !project.sourceUrl.includes('example.com') && (
+                      <a href={project.sourceUrl} target="_blank" rel="noreferrer">Source code <Icon name="arrow-up-right" size={16} /></a>
+                    )}
                     <Link to={`/projects/${project.slug}`}>View case study <Icon name="arrow-right" size={16} /></Link>
                   </div>
                 </Reveal>
@@ -346,7 +350,7 @@ function AboutSection() {
       <div className="container about-layout">
         <Reveal className="portrait-wrap">
           <div className="portrait-frame">
-            <img src={profile.portraitUrl} alt={`${profile.fullName} grayscale portrait`} />
+            <img src={profile.portraitUrl} alt={`${profile.fullName} portrait`} width="455" height="569" loading="lazy" />
             <span className="portrait-note">Portrait / study 01</span>
           </div>
         </Reveal>
@@ -356,7 +360,12 @@ function AboutSection() {
             <h2>{profile.aboutHeading.split(' ').slice(0, -1).join(' ')}<br /><em>{profile.aboutHeading.split(' ').slice(-1)}</em></h2>
             <p className="about-lede">{profile.aboutBiography}</p>
             <p className="about-body">{profile.aboutSecondary}</p>
-            <a className="text-link" href={`mailto:${profile.email}`}>Say hello <Icon name="arrow-up-right" size={16} /></a>
+            <div className="about-actions">
+              <a className="text-link" href={`mailto:${profile.email}`}>Say hello <Icon name="arrow-up-right" size={16} /></a>
+              {profile.cvUrl && (
+                <a className="text-link" href={profile.cvUrl} target="_blank" rel="noreferrer">Download CV <Icon name="arrow-up-right" size={16} /></a>
+              )}
+            </div>
           </Reveal>
         </div>
       </div>
@@ -465,15 +474,17 @@ function ContactSection() {
   )
 }
 
+const SECTIONS = ['home', 'work', 'experience', 'education', 'organizations', 'about', 'skills', 'contact']
+
 function App() {
-  const { data } = usePortfolio()
+  const { data, loading } = usePortfolio()
   const { profile } = data
   const [menuOpen, setMenuOpen] = useState(false)
   const [activeSection, setActiveSection] = useState('home')
   const [scrollProgress, setScrollProgress] = useState(0)
 
   useEffect(() => {
-    const sectionIds = ['home', 'work', 'experience', 'education', 'organizations', 'about', 'skills', 'contact']
+    const sectionIds = SECTIONS
     const updateScrollState = () => {
       const scrollable = document.documentElement.scrollHeight - window.innerHeight
       setScrollProgress(scrollable > 0 ? Math.min(window.scrollY / scrollable, 1) : 0)
@@ -499,6 +510,17 @@ function App() {
   }
 
   const backToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' })
+
+  if (loading) {
+    return (
+      <div className="portfolio-loading" role="status" aria-label="Loading portfolio">
+        <div className="portfolio-loading-inner">
+          <span className="brand-mark" aria-hidden="true">RA</span>
+          <span className="portfolio-loading-label">Loading</span>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="app-shell">
@@ -531,7 +553,7 @@ function App() {
               <Reveal delay={180}><p className="hero-description">{profile.heroDescription}</p></Reveal>
               <Reveal delay={270} className="hero-actions">
                 <button className="button button-dark" type="button" onClick={() => navigate('work')}>Explore selected work <Icon name="arrow-down" size={16} /></button>
-                <a className="button button-quiet" href="mailto:hello@rangga.dev">Start a conversation <Icon name="arrow-up-right" size={16} /></a>
+                <a className="button button-quiet" href={`mailto:${profile.email}`}>Start a conversation <Icon name="arrow-up-right" size={16} /></a>
               </Reveal>
             </div>
             <Reveal delay={220} className="hero-aside">
@@ -539,7 +561,7 @@ function App() {
               <div className="hero-aside-content">
                 <span className="mini-label">What I do</span>
                 <p>{profile.professionalTitle}<br />for the open web.</p>
-                <span className="hero-aside-index">01 <i>—</i> 07</span>
+                <span className="hero-aside-index">01 <i>—</i> {String(SECTIONS.length - 1).padStart(2, '0')}</span>
               </div>
             </Reveal>
           </div>

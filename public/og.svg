@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <!-- Background -->
+  <rect width="1200" height="630" fill="#f4f4f1"/>
+
+  <!-- Top border line -->
+  <rect x="0" y="0" width="1200" height="2" fill="#171715"/>
+
+  <!-- Brand mark top-left -->
+  <rect x="64" y="52" width="36" height="36" fill="none" stroke="#171715" stroke-width="1.5"/>
+  <text x="82" y="74" text-anchor="middle" font-family="monospace" font-size="12" letter-spacing="-1" fill="#171715">RA</text>
+  <text x="112" y="74" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="14" font-weight="700" letter-spacing="-0.3" fill="#171715">Rangga Ariansyah</text>
+
+  <!-- Main heading -->
+  <text x="64" y="280" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="80" font-weight="500" letter-spacing="-6" fill="#171715">Building</text>
+  <text x="64" y="370" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="80" font-weight="500" letter-spacing="-6" fill="#555550">digital things</text>
+  <text x="64" y="460" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="80" font-weight="500" letter-spacing="-6" fill="#555550">that matter.</text>
+
+  <!-- Role label -->
+  <text x="64" y="540" font-family="monospace" font-size="13" letter-spacing="2" fill="#686861" text-transform="uppercase">FULL-STACK WEB DEVELOPER · JAKARTA, ID</text>
+
+  <!-- Right side decorative element -->
+  <rect x="900" y="160" width="1" height="310" fill="#d2d2cc"/>
+  <text x="925" y="220" font-family="monospace" font-size="11" fill="#686861" letter-spacing="1">01 — SELECTED WORK</text>
+  <text x="925" y="260" font-family="monospace" font-size="11" fill="#686861" letter-spacing="1">02 — EXPERIENCE</text>
+  <text x="925" y="300" font-family="monospace" font-size="11" fill="#686861" letter-spacing="1">03 — EDUCATION</text>
+  <text x="925" y="340" font-family="monospace" font-size="11" fill="#686861" letter-spacing="1">04 — ORGANIZATIONS</text>
+  <text x="925" y="380" font-family="monospace" font-size="11" fill="#686861" letter-spacing="1">05 — ABOUT</text>
+  <text x="925" y="420" font-family="monospace" font-size="11" fill="#686861" letter-spacing="1">06 — SKILLS</text>
+  <text x="925" y="460" font-family="monospace" font-size="11" fill="#686861" letter-spacing="1">07 — CONTACT</text>
+
+  <!-- Bottom border -->
+  <rect x="0" y="628" width="1200" height="2" fill="#171715"/>
+</svg>

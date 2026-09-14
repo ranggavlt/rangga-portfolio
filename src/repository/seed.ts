@@ -78,7 +78,7 @@ export const createSeedPortfolioData = (): PortfolioData => ({
     location: 'Jakarta, ID / UTC+7',
     availabilityText: 'Available for select projects',
     email: 'hello@rangga.dev',
-    portraitUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=1100&q=86',
+    portraitUrl: '/aboutme.jpeg',
     portraitStoragePath: null,
     cvUrl: '',
     cvStoragePath: null,

@@ -47,8 +47,14 @@ export class SupabasePortfolioRepository implements PortfolioRepository {
 
   async refresh() {
     const publicDataPromise = Promise.all([
-      this.read('projects'), this.read('project_images'), this.read('profiles'), this.read('experiences'), this.read('education'),
-      this.read('organizations'), this.read('skills'), this.read('social_links'),
+      this.read('projects', 'id, slug, title, year, category, short_description, full_description, role, tech, live_url, source_url, status, display_order, updated_at'),
+      this.read('project_images', 'id, project_id, src, storage_path, alt, caption, position'),
+      this.read('profiles', 'id, full_name, professional_title, hero_eyebrow, hero_heading, hero_description, about_heading, about_biography, about_secondary, location, availability_text, email, portrait_url, portrait_storage_path, cv_url, cv_storage_path, footer_text'),
+      this.read('experiences', 'id, period, company, role, description, published, display_order'),
+      this.read('education', 'id, period, institution, degree, detail, display_order'),
+      this.read('organizations', 'id, name, meta, detail, published, display_order'),
+      this.read('skills', 'id, label, skills, display_order'),
+      this.read('social_links', 'id, platform, url, display_order, enabled'),
     ])
     const [{ data: authData, error: authError }, publicData] = await Promise.all([
       this.client.auth.getSession(),
@@ -62,7 +68,7 @@ export class SupabasePortfolioRepository implements PortfolioRepository {
     const [projects, images, profile, experience, education, organizations, skills, socialLinks] = publicData
     let messages: unknown[] = []
     if (authData.session) {
-      try { messages = await this.read('contact_messages') }
+      try { messages = await this.read('contact_messages', 'id, sender, email, message, submitted_at, read') }
       catch (error) { this.clearMessages(); throw error }
     }
     const seed = createSeedPortfolioData()
@@ -163,8 +169,8 @@ export class SupabasePortfolioRepository implements PortfolioRepository {
   async markMessageRead(id: string) { const { error } = await this.client.from('contact_messages').update({ read: true }).eq('id', id); if (error) throw new Error(`Could not mark message as read: ${error.message}`); await this.refresh() }
   async deleteMessage(id: string) { await this.remove('contact_messages', id, 'message'); await this.refresh() }
 
-  private async read(table: keyof Database['public']['Tables']) {
-    const { data, error } = await this.client.from(table).select('*')
+  private async read(table: keyof Database['public']['Tables'], columns = '*') {
+    const { data, error } = await this.client.from(table).select(columns)
     if (error) throw new Error(`Could not load ${table}: ${error.message}`)
     return data ?? []
   }

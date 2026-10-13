@@ -90,13 +90,12 @@ h1 em, h2 em, .large-statement em { color: var(--muted); font-style: normal; }
 .gallery-stage { position: relative; width: 100%; max-width: 690px; aspect-ratio: 16 / 9; touch-action: pan-y; }
 .project-image-card { position: absolute; inset: 0; overflow: hidden; border: 1px solid var(--line-dark); background: var(--panel); cursor: pointer; user-select: none; transition: transform .55s var(--ease), opacity .55s var(--ease), filter .55s var(--ease); }
 .project-image-card:focus-visible { outline: 2px solid var(--ink); outline-offset: 5px; }
-.project-image-card img { width: 100%; height: 100%; object-fit: cover; filter: grayscale(1) contrast(.9) brightness(1.02); pointer-events: none; }
+.project-image-card img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
 .project-image-card::after { position: absolute; inset: 0; border: 1px solid rgba(255, 255, 255, .28); content: ''; pointer-events: none; }
 .card-offset-0 { z-index: 3; opacity: 1; transform: translate3d(0, 0, 0) rotate(0deg); }
 .card-offset-1 { z-index: 2; opacity: .66; transform: translate3d(30px, 23px, 0) rotate(3.3deg) scale(.955); }
 .card-offset-2 { z-index: 1; opacity: .37; transform: translate3d(-23px, 45px, 0) rotate(-3.7deg) scale(.91); }
 .image-index { position: absolute; right: 13px; bottom: 11px; z-index: 2; padding: 4px 6px; color: var(--paper); background: var(--ink); font-size: 9px; }
-.gallery-grain { position: absolute; inset: 0; z-index: 4; pointer-events: none; opacity: .11; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.18'/%3E%3C/svg%3E"); mix-blend-mode: multiply; }
 .gallery-meta { display: flex; align-items: flex-start; justify-content: space-between; gap: 22px; margin-top: 27px; }
 .gallery-caption { display: flex; flex-direction: column; gap: 4px; max-width: 290px; color: var(--muted); font-size: 12px; animation: caption-in .5s var(--ease) both; }
 .caption-kicker { color: var(--ink); font-size: 9px; }

@@ -91,24 +91,23 @@ The public contact form adds messages to the local repository. Admin `/admin/mes
 
 This is explicitly local demo behavior. It will be replaced by a Supabase-backed message flow during backend integration.
 
-## Project image previews
+## Project gallery images
 
 Projects always contain exactly three gallery image records. The admin editor supports:
 
 - Image URL
-- Temporary local-file preview
+- Supabase Storage upload on save
 - Alt text
 - Caption
-- Replace preview
+- Replace upload for each of the three fixed slots
 - Reset preview
 
-Local-file previews use `URL.createObjectURL` in memory only. Image binaries and Base64 content are not permanently stored in localStorage. Supabase Storage will be integrated later.
+Local-file previews use `URL.createObjectURL` in memory only. In Supabase mode, Save Project uploads the selected JPEG, PNG, or WebP file to the public `portfolio-images` bucket and persists its public URL plus storage path in the matching `project_images` slot. Image binaries and Base64 content are never stored in localStorage.
+
+For a deployed build, set both `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` in the hosting environment before building, and apply `supabase/migrations/202609020004_phase4_storage.sql`. If the editor shows **Supabase required**, that build is running in local demo mode and cannot upload files.
 
 ## Not implemented intentionally
 
-- Supabase
-- SQL migrations
-- Supabase Storage
 - Vercel configuration
 - Real authentication
 - API keys or secrets

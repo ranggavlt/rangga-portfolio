@@ -165,7 +165,6 @@ function ProjectGallery({ project }: { project: PortfolioProject }) {
             </div>
           )
         })}
-        <div className="gallery-grain" aria-hidden="true" />
       </div>
       <div className="gallery-meta">
         <div className="gallery-caption" key={`${project.id}-${activeIndex}`}>

@@ -8,6 +8,8 @@ import { createSeedPortfolioData } from './seed'
 
 const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value)) as T
 const byOrder = <T extends { displayOrder: number }>(items: T[]) => [...items].sort((a, b) => a.displayOrder - b.displayOrder)
+const defaultPortraitUrl = '/aboutme.jpeg'
+const legacyPortraitUrl = 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=1100&q=86'
 
 const migrationError = (message: string, phase: 4 | 5, fallback: string) => {
   const normalized = message.toLowerCase()
@@ -31,7 +33,10 @@ const profileFromRow = (row: ProfileRow): Profile => ({
   fullName: row.full_name, professionalTitle: row.professional_title, heroEyebrow: row.hero_eyebrow,
   heroHeading: row.hero_heading, heroDescription: row.hero_description, aboutHeading: row.about_heading,
   aboutBiography: row.about_biography, aboutSecondary: row.about_secondary, location: row.location,
-  availabilityText: row.availability_text, email: row.email, portraitUrl: row.portrait_url,
+  availabilityText: row.availability_text, email: row.email,
+  // Existing Supabase installations keep their original seed value after a deploy.
+  // Use the checked-in portrait until the profile is explicitly updated in admin.
+  portraitUrl: row.portrait_url === legacyPortraitUrl ? defaultPortraitUrl : row.portrait_url,
   portraitStoragePath: row.portrait_storage_path ?? null, cvUrl: row.cv_url, cvStoragePath: row.cv_storage_path ?? null,
   footerText: row.footer_text,
 })
@@ -73,13 +78,13 @@ export class SupabasePortfolioRepository implements PortfolioRepository {
     }
     const seed = createSeedPortfolioData()
     this.data = {
-      projects: (projects as ProjectRow[]).map((project) => projectFromRow(project, images as ProjectImageRow[])),
-      profile: (profile as ProfileRow[])[0] ? profileFromRow((profile as ProfileRow[])[0]) : seed.profile,
-      experience: (experience as ExperienceRow[]).map((row) => ({ id: row.id, period: row.period, company: row.company, role: row.role, description: row.description, published: row.published, displayOrder: row.display_order })),
-      education: (education as EducationRow[]).map((row) => ({ id: row.id, period: row.period, institution: row.institution, degree: row.degree, detail: row.detail, displayOrder: row.display_order })),
-      organizations: (organizations as OrganizationRow[]).map((row) => ({ id: row.id, name: row.name, meta: row.meta, detail: row.detail, published: row.published, displayOrder: row.display_order })),
-      skills: (skills as SkillRow[]).map((row) => ({ id: row.id, label: row.label, skills: row.skills ?? [], displayOrder: row.display_order })),
-      socialLinks: (socialLinks as SocialLinkRow[]).map((row) => ({ id: row.id, platform: row.platform, url: row.url, displayOrder: row.display_order, enabled: row.enabled })),
+      projects: (projects as unknown as ProjectRow[]).map((project) => projectFromRow(project, images as unknown as ProjectImageRow[])),
+      profile: (profile as unknown as ProfileRow[])[0] ? profileFromRow((profile as unknown as ProfileRow[])[0]) : seed.profile,
+      experience: (experience as unknown as ExperienceRow[]).map((row) => ({ id: row.id, period: row.period, company: row.company, role: row.role, description: row.description, published: row.published, displayOrder: row.display_order })),
+      education: (education as unknown as EducationRow[]).map((row) => ({ id: row.id, period: row.period, institution: row.institution, degree: row.degree, detail: row.detail, displayOrder: row.display_order })),
+      organizations: (organizations as unknown as OrganizationRow[]).map((row) => ({ id: row.id, name: row.name, meta: row.meta, detail: row.detail, published: row.published, displayOrder: row.display_order })),
+      skills: (skills as unknown as SkillRow[]).map((row) => ({ id: row.id, label: row.label, skills: row.skills ?? [], displayOrder: row.display_order })),
+      socialLinks: (socialLinks as unknown as SocialLinkRow[]).map((row) => ({ id: row.id, platform: row.platform, url: row.url, displayOrder: row.display_order, enabled: row.enabled })),
       messages: (messages as ContactMessageRow[]).map((row) => ({ id: row.id, sender: row.sender, email: row.email, message: row.message, submittedAt: row.submitted_at, read: row.read })),
     }
     this.emit()

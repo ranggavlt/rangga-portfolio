@@ -4,10 +4,9 @@ import { PortfolioProject, ProjectImage } from '../../domain/types'
 import { mediaService, validateProjectImage } from '../../media/mediaService'
 import { usePortfolio } from '../../repository/PortfolioProvider'
 import { isHttpUrl } from '../lib/validation'
+import { ImagePosition, ProjectGalleryPersistenceError, saveProjectWithGalleryReplacements } from '../lib/projectGalleryPersistence'
 import { AdminIcon, PageHeader, useToast } from '../components/AdminUI'
 import { AdminField, TagsInput, TextArea, TextInput, Toggle } from '../components/FormControls'
-
-type ImagePosition = 1 | 2 | 3
 
 const placeholderImages = [
   'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=82',
@@ -51,6 +50,7 @@ export default function ProjectFormPage() {
   const previewUrlsRef = useRef<Partial<Record<ImagePosition, string>>>({})
   const [errors, setErrors] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
+  const [saveStatus, setSaveStatus] = useState('')
 
   useEffect(() => {
     if (id && !existing) navigate('/admin/projects', { replace: true })
@@ -86,6 +86,10 @@ export default function ProjectFormPage() {
     const file = event.target.files?.[0]
     event.target.value = ''
     if (!file) return
+    if (repository.mode !== 'supabase' || !mediaService) {
+      setErrors(['Replace requires Supabase Storage. Configure VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY in the running environment, then reload the admin page.'])
+      return
+    }
     try {
       await validateProjectImage(file)
       revokePreview(position)
@@ -135,47 +139,35 @@ export default function ProjectFormPage() {
     if (nextErrors.length) return
 
     setSaving(true)
-    const uploadedPaths: string[] = []
-    let databaseSaved = false
+    setSaveStatus('Preparing gallery upload…')
     try {
-      let images = project.images.map((image) => ({ ...image })) as PortfolioProject['images']
-      if (repository.mode === 'supabase') {
-        if (!mediaService) throw new Error('Supabase Storage is not configured.')
-        for (const position of [1, 2, 3] as ImagePosition[]) {
-          const file = pendingFiles[position]
-          if (!file) continue
-          const uploaded = await mediaService.uploadProjectImage(file, finalSlug, position)
-          uploadedPaths.push(uploaded.storagePath)
-          images = images.map((image) => image.position === position ? { ...image, src: uploaded.publicUrl, storagePath: uploaded.storagePath } : image) as PortfolioProject['images']
-        }
-      }
-
-      const savedProject = { ...project, slug: finalSlug, images, updatedAt: new Date().toISOString() }
-      await repository.saveProject(savedProject)
-      databaseSaved = true
-
-      const replacedPaths = existing?.images
-        .filter((oldImage) => oldImage.storagePath && images.find((image) => image.position === oldImage.position)?.storagePath !== oldImage.storagePath)
-        .map((image) => image.storagePath as string) ?? []
-      if (mediaService && replacedPaths.length) {
-        try { await mediaService.removeProjectImages(replacedPaths) }
-        catch { showToast('Project saved, but replaced image cleanup needs attention.', 'info') }
-      }
+      const result = await saveProjectWithGalleryReplacements({
+        project,
+        finalSlug,
+        pendingFiles,
+        originalImages: existing?.images,
+        repository,
+        media: mediaService,
+        onProgress: setSaveStatus,
+      })
 
       clearPendingMedia()
-      setProject(savedProject)
+      setProject(result.project)
+      if (result.cleanupWarning) showToast(`Project saved, but replaced image cleanup failed: ${result.cleanupWarning}`, 'info')
       showToast(isNew ? 'Project created.' : 'Project changes saved.')
       navigate('/admin/projects')
     } catch (error) {
-      let cleanupFailed = false
-      if (!databaseSaved && mediaService && uploadedPaths.length) {
-        try { await mediaService.removeProjectImages(uploadedPaths) } catch { cleanupFailed = true }
-      }
       const message = error instanceof Error ? error.message : 'Failed to save project. Please try again.'
-      setErrors([cleanupFailed ? `${message} Newly uploaded files may require manual cleanup.` : message])
-      showToast('Project was not saved. Your form data is still here.', 'error')
+      setErrors([message])
+      if (error instanceof ProjectGalleryPersistenceError && error.projectWasSaved) {
+        clearPendingMedia()
+        showToast('Project was saved, but the refreshed gallery could not be verified.', 'info')
+      } else {
+        showToast('Project was not saved. Your form data is still here.', 'error')
+      }
     } finally {
       setSaving(false)
+      setSaveStatus('')
     }
   }
 
@@ -199,13 +191,13 @@ export default function ProjectFormPage() {
             <div className="form-grid"><AdminField label="Live website URL"><TextInput type="url" value={project.liveUrl} onChange={(event) => update('liveUrl', event.target.value)} placeholder="https://example.com" /></AdminField><AdminField label="Source-code URL"><TextInput type="url" value={project.sourceUrl} onChange={(event) => update('sourceUrl', event.target.value)} placeholder="https://github.com/..." /></AdminField></div>
             <AdminField label="Technology tags" hint="Press Enter or type a comma to add a tag."><TagsInput value={project.tech} onChange={(value) => update('tech', value)} /></AdminField>
           </div></section>
-          <section className="form-section"><h2 className="form-section-title">Exactly three gallery images</h2><p className="admin-field"><small>{repository.mode === 'supabase' ? 'Selected files are previewed locally and uploaded only when you save.' : 'Local demo selections remain temporary previews; use an image URL for persisted demo data.'}</small></p><div className="image-editor-grid">
-            {project.images.map((image) => <div className="image-editor-card" key={image.position}><div className="image-preview"><img src={previewUrls[image.position] ?? image.src} alt={image.alt || `Gallery image ${image.position} preview`} /><span>0{image.position}</span></div><div className="image-editor-body"><AdminField label="Image URL"><TextInput value={image.src} onChange={(event) => updateImage(image.position, 'src', event.target.value)} placeholder="https://..." /></AdminField><AdminField label="Alt text"><TextInput value={image.alt} onChange={(event) => updateImage(image.position, 'alt', event.target.value)} placeholder="Describe the image" /></AdminField><AdminField label="Caption"><TextInput value={image.caption} onChange={(event) => updateImage(image.position, 'caption', event.target.value)} placeholder="A unique caption" /></AdminField><label className="admin-button button-quiet" htmlFor={`file-${image.position}`}><AdminIcon name="arrow" size={14} /> Replace<input id={`file-${image.position}`} className="file-input" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => handleFile(image.position, event)} disabled={saving} /></label><button className="admin-button button-quiet" type="button" onClick={() => resetPreview(image.position)} disabled={saving || !pendingFiles[image.position]}>Reset preview</button></div></div>)}
+          <section className="form-section"><h2 className="form-section-title">Exactly three gallery images</h2><p className="admin-field"><small>{repository.mode === 'supabase' ? 'Selected files are previewed locally, then uploaded to Supabase Storage when you save.' : 'File replacement requires Supabase configuration. In local demo mode, use a public image URL instead.'}</small></p><div className="image-editor-grid">
+            {project.images.map((image) => <div className="image-editor-card" key={image.position}><div className="image-preview"><img src={previewUrls[image.position] ?? image.src} alt={image.alt || `Gallery image ${image.position} preview`} /><span>0{image.position}</span></div><div className="image-editor-body"><AdminField label="Image URL"><TextInput value={image.src} onChange={(event) => updateImage(image.position, 'src', event.target.value)} placeholder="https://..." /></AdminField><AdminField label="Alt text"><TextInput value={image.alt} onChange={(event) => updateImage(image.position, 'alt', event.target.value)} placeholder="Describe the image" /></AdminField><AdminField label="Caption"><TextInput value={image.caption} onChange={(event) => updateImage(image.position, 'caption', event.target.value)} placeholder="A unique caption" /></AdminField><label className={`admin-button button-quiet ${repository.mode === 'supabase' ? '' : 'is-disabled'}`} htmlFor={`file-${image.position}`} aria-disabled={repository.mode !== 'supabase'}><AdminIcon name="arrow" size={14} /> {repository.mode === 'supabase' ? 'Replace' : 'Supabase required'}<input id={`file-${image.position}`} className="file-input" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => handleFile(image.position, event)} disabled={saving || repository.mode !== 'supabase'} /></label>{pendingFiles[image.position] && <div className="media-selection"><div><strong>{pendingFiles[image.position]!.name}</strong><span>Ready to upload to gallery slot 0{image.position}</span></div></div>}<button className="admin-button button-quiet" type="button" onClick={() => resetPreview(image.position)} disabled={saving || !pendingFiles[image.position]}>Reset preview</button></div></div>)}
           </div></section>
         </div></div>
         <aside className="editor-side"><div className="editor-side-card"><h2>Publishing</h2><Toggle label="Visible on public page" checked={project.published} onChange={(value) => update('published', value)} /><p style={{ marginTop: 12 }}>Drafts stay available in the admin list but are hidden from the public portfolio.</p></div><div className="editor-side-card"><h2>Image note</h2><p>External image URLs and managed Supabase Storage images can be mixed across the three slots.</p></div></aside>
       </div>
-      <div className="form-actions"><div className="form-feedback">{saving ? 'Uploading and saving…' : ''}</div><button type="button" className="admin-button button-quiet" onClick={() => navigate('/admin/projects')} disabled={saving}>Cancel</button><button type="submit" className="admin-button button-dark" disabled={saving}>{saving ? 'Saving' : 'Save project'} <AdminIcon name="arrow" size={14} /></button></div>
+      <div className="form-actions"><div className="form-feedback" role="status" aria-live="polite">{saveStatus}</div><button type="button" className="admin-button button-quiet" onClick={() => navigate('/admin/projects')} disabled={saving}>Cancel</button><button type="submit" className="admin-button button-dark" disabled={saving}>{saving ? 'Saving' : 'Save project'} <AdminIcon name="arrow" size={14} /></button></div>
     </form>
   </>
 }

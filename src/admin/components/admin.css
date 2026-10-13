@@ -40,6 +40,7 @@
 .button-danger { color: var(--paper); background: #40403c; }
 .button-danger:hover { background: var(--ink); }
 .admin-button:disabled { cursor: wait; opacity: .5; }
+.admin-button.is-disabled { cursor: not-allowed; opacity: .5; pointer-events: none; }
 .admin-input:disabled, .admin-textarea:disabled, .admin-select:disabled, .switch-field.is-disabled { cursor: not-allowed; opacity: .58; }
 .admin-card { border: 1px solid var(--line); background: var(--paper); }
 .admin-card-header { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 18px 20px; border-bottom: 1px solid var(--line); }
@@ -97,7 +98,7 @@
 .projects-table .actions-heading { text-align: right; }
 .table-project { display: flex; align-items: center; gap: 11px; min-width: 220px; }
 .table-thumb { width: 47px; height: 31px; flex-shrink: 0; overflow: hidden; border: 1px solid var(--line); background: var(--panel); }
-.table-thumb img { width: 100%; height: 100%; object-fit: cover; filter: grayscale(1); }
+.table-thumb img { width: 100%; height: 100%; object-fit: cover; }
 .table-project strong { display: block; font-size: 12px; font-weight: 600; }
 .table-project span, .muted-cell { display: block; color: var(--muted); font-size: 10px; }
 .table-actions { display: flex; gap: 5px; justify-content: flex-end; }
@@ -136,7 +137,7 @@
 .image-editor-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 .image-editor-card { border: 1px solid var(--line); background: var(--paper); }
 .image-preview { position: relative; aspect-ratio: 16 / 9; overflow: hidden; background: #e3e3de; }
-.image-preview img { width: 100%; height: 100%; object-fit: cover; filter: grayscale(1); }
+.image-preview img { width: 100%; height: 100%; object-fit: cover; }
 .image-preview span { position: absolute; top: 8px; left: 8px; padding: 3px 5px; color: var(--paper); background: var(--ink); font-family: var(--mono); font-size: 8px; }
 .image-editor-body { display: grid; gap: 12px; padding: 12px; }
 .image-editor-body .admin-button { min-height: 32px; }

@@ -53,6 +53,19 @@ export type OrganizationEntry = {
   displayOrder: number
 }
 
+export type CertificateEntry = {
+  id: string
+  name: string
+  issuer: string
+  issuedOn: string
+  verificationUrl: string
+  credentialId: string
+  proofUrl: string
+  proofStoragePath: string | null
+  published: boolean
+  displayOrder: number
+}
+
 export type SkillGroup = {
   id: string
   label: string
@@ -77,6 +90,8 @@ export type Profile = {
   cvUrl: string
   cvStoragePath?: string | null
   footerText: string
+  whatsappNumber: string
+  whatsappMessage: string
 }
 
 export type SocialLink = {
@@ -101,6 +116,7 @@ export type PortfolioData = {
   experience: ExperienceEntry[]
   education: EducationEntry[]
   organizations: OrganizationEntry[]
+  certificates: CertificateEntry[]
   skills: SkillGroup[]
   profile: Profile
   socialLinks: SocialLink[]
@@ -108,7 +124,7 @@ export type PortfolioData = {
 }
 
 export type RepositoryListener = (data: PortfolioData) => void
-export type ReorderableSection = 'experience' | 'education' | 'organizations' | 'skills' | 'socialLinks'
+export type ReorderableSection = 'experience' | 'education' | 'organizations' | 'certificates' | 'skills' | 'socialLinks'
 
 export interface PortfolioRepository {
   readonly mode: 'local' | 'supabase'
@@ -140,6 +156,10 @@ export interface PortfolioRepository {
   getOrganizations(): OrganizationEntry[]
   saveOrganization(entry: OrganizationEntry): Promise<void>
   deleteOrganization(id: string): Promise<void>
+  // Certificates
+  getCertificates(): CertificateEntry[]
+  saveCertificate(entry: CertificateEntry): Promise<void>
+  deleteCertificate(id: string): Promise<void>
   // Skills
   getSkills(): SkillGroup[]
   saveSkillGroup(group: SkillGroup): Promise<void>

@@ -1,5 +1,6 @@
 export type AdminUserRow = { user_id: string; created_at: string; updated_at: string }
-export type ProfileRow = { id: string; full_name: string; professional_title: string; hero_eyebrow: string; hero_heading: string; hero_description: string; about_heading: string; about_biography: string; about_secondary: string; location: string; availability_text: string; email: string; portrait_url: string; portrait_storage_path: string | null; cv_url: string; cv_storage_path: string | null; footer_text: string; created_at: string; updated_at: string }
+export type ProfileRow = { id: string; full_name: string; professional_title: string; hero_eyebrow: string; hero_heading: string; hero_description: string; about_heading: string; about_biography: string; about_secondary: string; location: string; availability_text: string; email: string; portrait_url: string; portrait_storage_path: string | null; cv_url: string; cv_storage_path: string | null; footer_text: string; whatsapp_number: string; whatsapp_message: string; created_at: string; updated_at: string }
+export type CertificateRow = { id: string; name: string; issuer: string; issued_on: string; verification_url: string; credential_id: string; proof_url: string; proof_storage_path: string | null; published: boolean; display_order: number; created_at: string; updated_at: string }
 export type ProjectRow = { id: string; slug: string; title: string; year: string; category: string; short_description: string; full_description: string; role: string; tech: string[]; live_url: string; source_url: string; status: 'draft' | 'published'; display_order: number; created_at: string; updated_at: string }
 export type ProjectImageRow = { id: string; project_id: string; src: string; storage_path: string | null; alt: string; caption: string; position: number; created_at: string; updated_at: string }
 export type ExperienceRow = { id: string; period: string; company: string; role: string; description: string; published: boolean; display_order: number; created_at: string; updated_at: string }
@@ -26,6 +27,7 @@ export type Database = {
       experiences: Table<ExperienceRow, Omit<ExperienceRow, 'id' | 'created_at' | 'updated_at'> & { id?: string }>
       education: Table<EducationRow, Omit<EducationRow, 'id' | 'created_at' | 'updated_at'> & { id?: string }>
       organizations: Table<OrganizationRow, Omit<OrganizationRow, 'id' | 'created_at' | 'updated_at'> & { id?: string }>
+      certificates: Table<CertificateRow, Omit<CertificateRow, 'id' | 'created_at' | 'updated_at'> & { id?: string }>
       skills: Table<SkillRow, Omit<SkillRow, 'id' | 'created_at' | 'updated_at'> & { id?: string }>
       social_links: Table<SocialLinkRow, Omit<SocialLinkRow, 'id' | 'created_at' | 'updated_at'> & { id?: string }>
       contact_messages: Table<ContactMessageRow, Pick<ContactMessageRow, 'sender' | 'email' | 'message'> & { id?: string; submitted_at?: string; read?: boolean }>
@@ -54,11 +56,12 @@ export type Database = {
       }
       reorder_portfolio_items: {
         Args: {
-          p_section: 'experience' | 'education' | 'organizations' | 'skills' | 'social_links'
+          p_section: 'experience' | 'education' | 'organizations' | 'certificates' | 'skills' | 'social_links'
           p_ordered_ids: string[]
         }
         Returns: undefined
       }
+      reorder_certificates: { Args: { p_ordered_ids: string[] }; Returns: undefined }
     }
     Enums: { project_status: 'draft' | 'published' }
     CompositeTypes: Record<string, never>

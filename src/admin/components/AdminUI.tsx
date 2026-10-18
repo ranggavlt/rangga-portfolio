@@ -13,6 +13,7 @@ const navItems = [
   { label: 'Experience', to: '/admin/experience' },
   { label: 'Education', to: '/admin/education' },
   { label: 'Organizations', to: '/admin/organizations' },
+  { label: 'Certificates', to: '/admin/certificates' },
   { label: 'Skills', to: '/admin/skills' },
   { label: 'Profile', to: '/admin/profile' },
   { label: 'Social links', to: '/admin/social-links' },

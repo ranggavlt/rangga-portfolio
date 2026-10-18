@@ -17,6 +17,8 @@ type RevealProps = {
 const navLinks = [
   { id: 'work', label: 'Work' },
   { id: 'experience', label: 'Experience' },
+  { id: 'certificates', label: 'Certificates' },
+  { id: 'skills', label: 'Skills' },
   { id: 'about', label: 'About' },
   { id: 'contact', label: 'Contact' },
 ]
@@ -199,17 +201,18 @@ function ProjectsSection() {
           {visibleProjects.map((project, index) => {
             const sourceUrl = publicSourceUrl(project)
             return (
-            <article className="project-row" key={project.id}>
-              <div className="project-gallery-column">
-                <ProjectGallery project={project} />
-              </div>
-              <div className="project-copy">
-                <Reveal delay={index * 90}>
+              <article className="project-row" key={project.id}>
+                <Reveal className="project-heading" delay={index * 90}>
                   <div className="project-overline">
                     <span>{project.year}</span>
                     <span>{project.category}</span>
                   </div>
                   <h3>{project.title}</h3>
+                </Reveal>
+                <div className="project-gallery-column">
+                  <ProjectGallery project={project} />
+                </div>
+                <Reveal className="project-details" delay={index * 90}>
                   <p className="project-description">{project.shortDescription}</p>
                   <div className="project-role">
                     <span className="mini-label">Role</span>
@@ -228,9 +231,9 @@ function ProjectsSection() {
                     <Link to={`/projects/${project.slug}`} onClick={rememberPortfolioScroll}>View case study <Icon name="arrow-right" size={16} /></Link>
                   </div>
                 </Reveal>
-              </div>
-            </article>
-          )})}
+              </article>
+            )
+          })}
         </div>
       </div>
     </section>
@@ -344,7 +347,7 @@ function OrganizationsSection() {
   )
 }
 
-function AboutSection() {
+function AboutSection({ number }: { number: string }) {
   const { data } = usePortfolio()
   const { profile } = data
 
@@ -359,7 +362,7 @@ function AboutSection() {
         </Reveal>
         <div className="about-copy">
           <Reveal>
-            <SectionLabel number="05" label="About" detail="The person behind the interface" />
+            <SectionLabel number={number} label="About" detail="The person behind the interface" />
             <h2>{profile.aboutHeading.split(' ').slice(0, -1).join(' ')}<br /><em>{profile.aboutHeading.split(' ').slice(-1)}</em></h2>
             <p className="about-lede">{profile.aboutBiography}</p>
             <p className="about-body">{profile.aboutSecondary}</p>
@@ -376,14 +379,14 @@ function AboutSection() {
   )
 }
 
-function SkillsSection() {
+function SkillsSection({ number }: { number: string }) {
   const { data } = usePortfolio()
 
   return (
     <section className="section skills-section" id="skills">
       <div className="container">
         <Reveal className="section-heading-row compact-heading">
-          <SectionLabel number="06" label="Skills & expertise" detail="Tools for useful work" />
+          <SectionLabel number={number} label="Skills & expertise" detail="Tools for useful work" />
           <p className="section-intro">A wide enough lens to see the whole system, a close enough eye to care about the details.</p>
         </Reveal>
         <div className="skills-grid">
@@ -399,7 +402,7 @@ function SkillsSection() {
   )
 }
 
-function ContactSection() {
+function ContactSection({ number }: { number: string }) {
   const { data, repository } = usePortfolio()
   const [form, setForm] = useState({ name: '', email: '', message: '' })
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
@@ -455,7 +458,7 @@ function ContactSection() {
     <section className="section contact-section" id="contact">
       <div className="container contact-layout">
         <Reveal className="contact-intro">
-          <SectionLabel number="07" label="Contact" detail="Let’s make something clear" />
+          <SectionLabel number={number} label="Contact" detail="Let’s make something clear" />
           <h2>Have a good<br /><em>question?</em></h2>
           <p>Tell me a little about what you’re working on, where it’s stuck, or what you’d like to explore.</p>
           <a className="email-link" href={`mailto:${data.profile.email}`}><Icon name="mail" size={17} /> {data.profile.email}</a>
@@ -495,17 +498,28 @@ function ContactSection() {
   )
 }
 
-const SECTIONS = ['home', 'work', 'experience', 'education', 'organizations', 'about', 'skills', 'contact']
+function CertificatesSection() {
+  const { data } = usePortfolio()
+  const certificates = data.certificates.filter((entry) => entry.published && entry.proofUrl).sort((a, b) => a.displayOrder - b.displayOrder)
+  if (!certificates.length) return null
+  return <section className="section certificates-section" id="certificates"><div className="container">
+    <Reveal className="section-heading-row compact-heading"><SectionLabel number="05" label="Certificates" detail="Verified credentials" /><p className="section-intro">Credentials with a public record or certificate proof.</p></Reveal>
+    <div className="certificate-grid">{certificates.map((entry) => <Reveal key={entry.id} className="certificate-card"><div className="certificate-card-top"><span>{entry.issuer}</span><time dateTime={entry.issuedOn}>{entry.issuedOn}</time></div><h3>{entry.name}</h3>{entry.credentialId && <p className="certificate-id">Credential ID: {entry.credentialId}</p>}<div className="certificate-links"><a href={entry.proofUrl} target="_blank" rel="noreferrer">View certificate <Icon name="arrow-up-right" size={15} /></a>{entry.verificationUrl && <a href={entry.verificationUrl} target="_blank" rel="noreferrer">Verify credential <Icon name="arrow-up-right" size={15} /></a>}</div></Reveal>)}</div>
+  </div></section>
+}
 
 function App() {
   const { data, loading } = usePortfolio()
   const { profile } = data
+  const hasCertificates = data.certificates.some((entry) => entry.published && entry.proofUrl)
+  const sections = ['home', 'work', 'experience', 'education', 'organizations', ...(hasCertificates ? ['certificates'] : []), 'skills', 'about', 'contact']
+  const visibleNavLinks = navLinks.filter((link) => link.id !== 'certificates' || hasCertificates)
   const [menuOpen, setMenuOpen] = useState(false)
   const [activeSection, setActiveSection] = useState('home')
   const [scrollProgress, setScrollProgress] = useState(0)
 
   useEffect(() => {
-    const sectionIds = SECTIONS
+    const sectionIds = sections
     const updateScrollState = () => {
       const scrollable = document.documentElement.scrollHeight - window.innerHeight
       setScrollProgress(scrollable > 0 ? Math.min(window.scrollY / scrollable, 1) : 0)
@@ -523,7 +537,7 @@ function App() {
       window.removeEventListener('scroll', updateScrollState)
       window.removeEventListener('resize', updateScrollState)
     }
-  }, [])
+  }, [hasCertificates])
 
   const navigate = (id: string) => {
     setMenuOpen(false)
@@ -553,7 +567,7 @@ function App() {
             <span className="brand-name">Rangga Ariansyah</span>
           </a>
           <nav id="primary-navigation" className={`desktop-nav ${menuOpen ? 'mobile-open' : ''}`} aria-label="Primary navigation">
-            {navLinks.map((link) => <a key={link.id} className={activeSection === link.id || (link.id === 'about' && (activeSection === 'skills' || activeSection === 'organizations')) ? 'is-active' : ''} href={`#${link.id}`} onClick={(event) => { event.preventDefault(); navigate(link.id) }}>{link.label}</a>)}
+            {visibleNavLinks.map((link) => <a key={link.id} className={activeSection === link.id || (link.id === 'experience' && (activeSection === 'education' || activeSection === 'organizations')) ? 'is-active' : ''} href={`#${link.id}`} onClick={(event) => { event.preventDefault(); navigate(link.id) }}>{link.label}</a>)}
           </nav>
           <div className="header-action">
             <a className="header-availability" href={`mailto:${profile.email}`}><span /> {profile.availabilityText}</a>
@@ -582,7 +596,7 @@ function App() {
               <div className="hero-aside-content">
                 <span className="mini-label">What I do</span>
                 <p>{profile.professionalTitle}<br />for the open web.</p>
-                <span className="hero-aside-index">01 <i>—</i> {String(SECTIONS.length - 1).padStart(2, '0')}</span>
+                <span className="hero-aside-index">01 <i>—</i> {String(sections.length - 1).padStart(2, '0')}</span>
               </div>
             </Reveal>
           </div>
@@ -597,9 +611,10 @@ function App() {
         <ExperienceSection />
         <EducationSection />
         <OrganizationsSection />
-        <AboutSection />
-        <SkillsSection />
-        <ContactSection />
+        {hasCertificates && <CertificatesSection />}
+        <SkillsSection number={hasCertificates ? '06' : '05'} />
+        <AboutSection number={hasCertificates ? '07' : '06'} />
+        <ContactSection number={hasCertificates ? '08' : '07'} />
       </main>
 
       <footer className="site-footer">

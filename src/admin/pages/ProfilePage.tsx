@@ -1,5 +1,6 @@
 import { ChangeEvent, FormEvent, useEffect, useRef, useState } from 'react'
 import { Profile } from '../../domain/types'
+import { isValidWhatsAppNumber } from '../../lib/whatsapp'
 import { mediaService, validateCvPdf, validatePortraitImage } from '../../media/mediaService'
 import { usePortfolio } from '../../repository/PortfolioProvider'
 import { errorMessage, formatFileSize, isHttpUrl, storageFileName } from '../lib/validation'
@@ -88,6 +89,10 @@ export default function ProfilePage() {
       setError('Enter a valid profile email address.')
       return
     }
+    if (profile.whatsappNumber.trim() && !isValidWhatsAppNumber(profile.whatsappNumber.trim())) {
+      setError('Use an Indonesian international WhatsApp number beginning with 628, without +, spaces, or punctuation.')
+      return
+    }
     if (portraitMode === 'external' && portraitExternalUrl.trim() && !isHttpUrl(portraitExternalUrl, false)) {
       setError('External portrait URL must start with http:// or https://.')
       return
@@ -112,7 +117,7 @@ export default function ProfilePage() {
     let databaseSaved = false
 
     try {
-      let savedProfile: Profile = { ...profile, email: profile.email.trim() }
+      let savedProfile: Profile = { ...profile, email: profile.email.trim(), whatsappNumber: profile.whatsappNumber.trim(), whatsappMessage: profile.whatsappMessage.trim() }
 
       if (portraitMode === 'external') {
         const nextUrl = portraitExternalUrl.trim()
@@ -206,6 +211,8 @@ export default function ProfilePage() {
           <AdminField label="Location"><TextInput value={profile.location} onChange={(event) => setProfile({ ...profile, location: event.target.value })} disabled={saving} /></AdminField>
           <AdminField label="Availability text"><TextInput value={profile.availabilityText} onChange={(event) => setProfile({ ...profile, availabilityText: event.target.value })} disabled={saving} /></AdminField>
         </div></section>
+
+        <section className="form-section"><h2 className="form-section-title">WhatsApp</h2><p className="media-help">The public chat button appears only after a valid number is saved.</p><div className="admin-form"><AdminField label="WhatsApp number" hint="International Indonesian format: 628 followed by your number, without + or spaces."><TextInput type="tel" inputMode="numeric" autoComplete="tel" maxLength={15} value={profile.whatsappNumber} onChange={(event) => setProfile({ ...profile, whatsappNumber: event.target.value })} placeholder="628..." disabled={saving} /></AdminField><AdminField label="Opening message" hint="Optional text prefilled when someone opens WhatsApp, up to 300 characters."><TextArea rows={3} maxLength={300} value={profile.whatsappMessage} onChange={(event) => setProfile({ ...profile, whatsappMessage: event.target.value })} disabled={saving} /></AdminField></div></section>
 
         <section className="form-section"><h2 className="form-section-title">CV document</h2><div className="media-source-tabs" role="group" aria-label="CV source">
           <button className={cvMode === 'upload' ? 'is-active' : ''} type="button" onClick={() => setCvMode('upload')} disabled={saving || !uploadAvailable} aria-pressed={cvMode === 'upload'}>Upload PDF <span>Recommended</span></button>

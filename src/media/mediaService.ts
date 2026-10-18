@@ -37,12 +37,16 @@ export const validateCvPdf = (file: File) => {
   if (file.type !== 'application/pdf') throw new Error('CV must be a PDF document.')
   if (file.size > CV_MAX_BYTES) throw new Error('CV must be 10 MB or smaller.')
 }
+export const validateCertificateFile = (file: File) => {
+  if (file.type !== 'application/pdf' && !IMAGE_EXTENSIONS[file.type]) throw new Error('Certificate proof must be a PDF, JPEG, PNG, or WebP file.')
+  if (file.size > CV_MAX_BYTES) throw new Error('Certificate proof must be 10 MB or smaller.')
+}
 
 const safeReference = (value: string) => value.toLowerCase().trim().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80) || 'project'
 
-const storageFailure = (action: 'upload' | 'remove', bucket: string, message: string) => {
+const storageFailure = (action: 'upload' | 'remove', bucket: string, message: string, mediaLabel?: string) => {
   const normalized = message.toLowerCase()
-  const label = bucket === PORTFOLIO_DOCUMENTS_BUCKET ? 'CV document' : 'image'
+  const label = mediaLabel ?? (bucket === PORTFOLIO_DOCUMENTS_BUCKET ? 'CV document' : 'image')
   if (normalized.includes('bucket not found') || normalized.includes('not found')) {
     return new Error(`Could not ${action} ${label}: the Supabase Storage bucket "${bucket}" is missing. Apply the Phase 4 storage migration in the Supabase Dashboard.`)
   }
@@ -78,27 +82,33 @@ export class SupabaseMediaService {
     validateCvPdf(file)
     return this.upload(PORTFOLIO_DOCUMENTS_BUCKET, `profile/cv-${crypto.randomUUID()}.pdf`, file)
   }
+  async uploadCertificate(file: File) {
+    validateCertificateFile(file)
+    const extension = file.type === 'application/pdf' ? 'pdf' : IMAGE_EXTENSIONS[file.type]
+    return this.upload(PORTFOLIO_DOCUMENTS_BUCKET, `certificates/${crypto.randomUUID()}.${extension}`, file, 'certificate proof')
+  }
 
   async removeProjectImages(paths: string[]) { await this.remove(PORTFOLIO_IMAGES_BUCKET, paths) }
   async removePortrait(path: string) { await this.remove(PORTFOLIO_IMAGES_BUCKET, [path]) }
   async removeCv(path: string) { await this.remove(PORTFOLIO_DOCUMENTS_BUCKET, [path]) }
+  async removeCertificate(path: string) { await this.remove(PORTFOLIO_DOCUMENTS_BUCKET, [path], 'certificate proof') }
 
-  private async upload(bucket: string, path: string, file: File): Promise<UploadedMedia> {
+  private async upload(bucket: string, path: string, file: File, label?: string): Promise<UploadedMedia> {
     const { error } = await this.client.storage.from(bucket).upload(path, file, {
       upsert: false,
       contentType: file.type,
       cacheControl: '31536000',
     })
-    if (error) throw storageFailure('upload', bucket, error.message)
+    if (error) throw storageFailure('upload', bucket, error.message, label)
     const { data } = this.client.storage.from(bucket).getPublicUrl(path)
     return { publicUrl: data.publicUrl, storagePath: path }
   }
 
-  private async remove(bucket: string, paths: string[]) {
+  private async remove(bucket: string, paths: string[], label?: string) {
     const managedPaths = [...new Set(paths.filter(Boolean))]
     if (!managedPaths.length) return
     const { error } = await this.client.storage.from(bucket).remove(managedPaths)
-    if (error) throw storageFailure('remove', bucket, error.message)
+    if (error) throw storageFailure('remove', bucket, error.message, label)
   }
 }
 

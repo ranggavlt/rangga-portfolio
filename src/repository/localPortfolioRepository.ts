@@ -1,5 +1,6 @@
 import {
   ContactMessage,
+  CertificateEntry,
   EducationEntry,
   ExperienceEntry,
   OrganizationEntry,
@@ -59,6 +60,7 @@ export class LocalPortfolioRepository implements PortfolioRepository {
       experience: Array.isArray(data.experience) ? data.experience : seed.experience,
       education: Array.isArray(data.education) ? data.education : seed.education,
       organizations: Array.isArray(data.organizations) ? data.organizations : seed.organizations,
+      certificates: Array.isArray(data.certificates) ? data.certificates : [],
       skills: Array.isArray(data.skills) ? data.skills : seed.skills,
       socialLinks: Array.isArray(data.socialLinks) ? data.socialLinks : seed.socialLinks,
       messages: Array.isArray(data.messages) ? data.messages : [],
@@ -126,6 +128,10 @@ export class LocalPortfolioRepository implements PortfolioRepository {
   getOrganizations() { return orderByDisplay(this.data.organizations) }
   async saveOrganization(entry: OrganizationEntry): Promise<void> { this.commit({ ...this.data, organizations: this.data.organizations.some((item) => item.id === entry.id) ? this.data.organizations.map((item) => item.id === entry.id ? entry : item) : [...this.data.organizations, entry] }) }
   async deleteOrganization(id: string): Promise<void> { this.commit({ ...this.data, organizations: this.data.organizations.filter((entry) => entry.id !== id) }) }
+
+  getCertificates() { return orderByDisplay(this.data.certificates) }
+  async saveCertificate(entry: CertificateEntry): Promise<void> { this.commit({ ...this.data, certificates: this.data.certificates.some((item) => item.id === entry.id) ? this.data.certificates.map((item) => item.id === entry.id ? entry : item) : [...this.data.certificates, entry] }) }
+  async deleteCertificate(id: string): Promise<void> { this.commit({ ...this.data, certificates: this.data.certificates.filter((entry) => entry.id !== id) }) }
 
   // ── Skills ─────────────────────────────────────────────────────────────────
   getSkills() { return orderByDisplay(this.data.skills) }

@@ -60,6 +60,7 @@ export const createSeedPortfolioData = (): PortfolioData => ({
     published: true,
     displayOrder: index + 1,
   })),
+  certificates: [],
   skills: skillGroups.map((group, index) => ({
     id: `skill-group-${index + 1}`,
     label: group.label,
@@ -83,6 +84,8 @@ export const createSeedPortfolioData = (): PortfolioData => ({
     cvUrl: '',
     cvStoragePath: null,
     footerText: 'Designed and built with intention.',
+    whatsappNumber: '',
+    whatsappMessage: '',
   },
   socialLinks: socialLinks.map((link, index) => ({
     id: `social-${index + 1}`,

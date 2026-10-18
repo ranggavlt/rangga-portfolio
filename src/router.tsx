@@ -5,6 +5,7 @@ import { useAuth } from './auth/AuthProvider'
 import PublicProjectPlaceholder from './pages/PublicProjectPlaceholder'
 import NotFoundPage from './pages/NotFoundPage'
 import { PublicScrollManager } from './publicScroll'
+import { WhatsAppButton } from './components/WhatsAppButton'
 
 const AdminLayout = lazy(() => import('./admin/components/AdminUI').then((module) => ({ default: module.AdminLayout })))
 const LoginPage = lazy(() => import('./admin/pages/LoginPage'))
@@ -14,6 +15,7 @@ const ProjectFormPage = lazy(() => import('./admin/pages/ProjectFormPage'))
 const ExperiencePage = lazy(() => import('./admin/pages/ExperiencePage'))
 const EducationPage = lazy(() => import('./admin/pages/EducationPage'))
 const OrganizationsPage = lazy(() => import('./admin/pages/OrganizationsPage'))
+const CertificatesPage = lazy(() => import('./admin/pages/CertificatesPage'))
 const SkillsPage = lazy(() => import('./admin/pages/SkillsPage'))
 const ProfilePage = lazy(() => import('./admin/pages/ProfilePage'))
 const SocialLinksPage = lazy(() => import('./admin/pages/SocialLinksPage'))
@@ -44,6 +46,7 @@ export function PortfolioRouter() {
         <Route path="experience" element={<ExperiencePage />} />
         <Route path="education" element={<EducationPage />} />
         <Route path="organizations" element={<OrganizationsPage />} />
+        <Route path="certificates" element={<CertificatesPage />} />
         <Route path="skills" element={<SkillsPage />} />
         <Route path="profile" element={<ProfilePage />} />
         <Route path="social-links" element={<SocialLinksPage />} />
@@ -52,5 +55,5 @@ export function PortfolioRouter() {
       </Route>
     </Route>
     <Route path="*" element={<NotFoundPage />} />
-  </Routes></Suspense></>
+  </Routes><WhatsAppButton /></Suspense></>
 }

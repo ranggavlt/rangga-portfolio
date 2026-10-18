@@ -1,5 +1,5 @@
 .admin-shell { min-height: 100vh; display: flex; background: #efefec; color: var(--ink); }
-.admin-sidebar { position: fixed; inset: 0 auto 0 0; z-index: 30; display: flex; width: 242px; flex-direction: column; border-right: 1px solid var(--line); background: var(--paper); }
+.admin-sidebar { position: fixed; inset: 0 auto 0 0; z-index: 30; display: flex; width: 242px; flex-direction: column; overflow-y: auto; border-right: 1px solid var(--line); background: var(--paper); }
 .admin-brand { display: flex; align-items: center; gap: 11px; min-height: 76px; padding: 0 22px; border-bottom: 1px solid var(--line); }
 .admin-brand > div { display: flex; flex-direction: column; gap: 2px; }
 .admin-brand strong { font-size: 12px; letter-spacing: -.02em; }

@@ -502,10 +502,53 @@ function CertificatesSection() {
   const { data } = usePortfolio()
   const certificates = data.certificates.filter((entry) => entry.published && entry.proofUrl).sort((a, b) => a.displayOrder - b.displayOrder)
   if (!certificates.length) return null
-  return <section className="section certificates-section" id="certificates"><div className="container">
-    <Reveal className="section-heading-row compact-heading"><SectionLabel number="05" label="Certificates" detail="Verified credentials" /><p className="section-intro">Credentials with a public record or certificate proof.</p></Reveal>
-    <div className="certificate-grid">{certificates.map((entry) => <Reveal key={entry.id} className="certificate-card"><div className="certificate-card-top"><span>{entry.issuer}</span><time dateTime={entry.issuedOn}>{entry.issuedOn}</time></div><h3>{entry.name}</h3>{entry.credentialId && <p className="certificate-id">Credential ID: {entry.credentialId}</p>}<div className="certificate-links"><a href={entry.proofUrl} target="_blank" rel="noreferrer">View certificate <Icon name="arrow-up-right" size={15} /></a>{entry.verificationUrl && <a href={entry.verificationUrl} target="_blank" rel="noreferrer">Verify credential <Icon name="arrow-up-right" size={15} /></a>}</div></Reveal>)}</div>
-  </div></section>
+  return (
+    <section className="section certificates-section" id="certificates">
+      <div className="container">
+        <Reveal className="section-heading-row compact-heading">
+          <SectionLabel number="05" label="Certificates" detail="Verified credentials" />
+          <p className="section-intro">Credentials with a public record or certificate proof.</p>
+        </Reveal>
+        <div className="certificate-grid">
+          {certificates.map((entry, index) => (
+            <Reveal key={entry.id} delay={index * 75} className="cert-card-reveal">
+              <article className="certificate-card">
+                <div className="certificate-card-accent" aria-hidden="true" />
+                <div className="certificate-card-inner">
+                  <div className="certificate-card-header">
+                    <div className="certificate-meta-row">
+                      <span className="certificate-issuer">{entry.issuer}</span>
+                      <time className="certificate-date" dateTime={entry.issuedOn}>{entry.issuedOn}</time>
+                    </div>
+                    <span className="certificate-index" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
+                  </div>
+                  <h3 className="certificate-title">{entry.name}</h3>
+                  {entry.credentialId && (
+                    <p className="certificate-id">
+                      <span className="certificate-id-label">ID</span>
+                      {entry.credentialId}
+                    </p>
+                  )}
+                  <div className="certificate-footer">
+                    <div className="certificate-links">
+                      <a href={entry.proofUrl} target="_blank" rel="noreferrer" className="cert-link-primary">
+                        View certificate <Icon name="arrow-up-right" size={14} />
+                      </a>
+                      {entry.verificationUrl && (
+                        <a href={entry.verificationUrl} target="_blank" rel="noreferrer" className="cert-link-secondary">
+                          Verify <Icon name="external" size={13} />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </article>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
 }
 
 function App() {

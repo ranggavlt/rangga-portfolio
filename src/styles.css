@@ -216,14 +216,151 @@ h1 em, h2 em, .large-statement em { color: var(--muted); font-style: normal; }
 .submit-button:disabled { cursor: wait; opacity: .55; }
 
 .site-footer { border-top: 1px solid var(--ink); background: var(--paper-strong); }
+
+/* ── Certificates Section ─────────────────────────────────────────────────── */
 .certificates-section { padding: 120px 0 140px; border-top: 1px solid var(--line); }
-.certificate-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
-.certificate-card { min-width: 0; padding: 28px; border: 1px solid var(--line); background: var(--paper-strong); }
-.certificate-card-top { display: flex; justify-content: space-between; gap: 20px; color: var(--muted); font-family: var(--mono); font-size: 10px; text-transform: uppercase; }
-.certificate-card h3 { margin: 22px 0 12px; font-size: clamp(19px, 2.3vw, 29px); line-height: 1.25; letter-spacing: -.045em; }
-.certificate-id { overflow-wrap: anywhere; color: var(--muted); font-family: var(--mono); font-size: 11px; }
-.certificate-links { display: flex; flex-wrap: wrap; gap: 10px 24px; margin-top: 28px; }
-.certificate-links a { display: inline-flex; min-height: 44px; align-items: center; gap: 6px; font-family: var(--mono); font-size: 10px; text-transform: uppercase; text-decoration: underline; text-underline-offset: 4px; }
+.certificate-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  margin-top: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+}
+.cert-card-reveal { display: contents; }
+
+.certificate-card {
+  position: relative;
+  min-width: 0;
+  background: var(--paper-strong);
+  overflow: hidden;
+  transition: background .3s ease, transform .35s var(--ease), box-shadow .35s var(--ease);
+  cursor: default;
+}
+.certificate-card:hover {
+  background: var(--paper);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 40px rgba(23, 23, 21, .10), 0 2px 8px rgba(23, 23, 21, .06);
+  z-index: 2;
+}
+
+/* Animated top accent line */
+.certificate-card-accent {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--ink);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform .45s var(--ease);
+}
+.certificate-card:hover .certificate-card-accent { transform: scaleX(1); }
+
+.certificate-card-inner { padding: 28px 30px 24px; height: 100%; display: flex; flex-direction: column; }
+
+/* Header row: meta + index number */
+.certificate-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.certificate-meta-row { display: flex; flex-direction: column; gap: 5px; }
+.certificate-issuer {
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+.certificate-date {
+  color: var(--soft);
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: .05em;
+}
+.certificate-index {
+  flex-shrink: 0;
+  color: var(--line-dark);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: .06em;
+  transition: color .3s ease;
+}
+.certificate-card:hover .certificate-index { color: var(--soft); }
+
+/* Title */
+.certificate-title {
+  margin: 0 0 14px;
+  font-size: clamp(17px, 2vw, 25px);
+  font-weight: 500;
+  letter-spacing: -.05em;
+  line-height: 1.15;
+  flex-grow: 1;
+}
+
+/* Credential ID */
+.certificate-id {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  overflow-wrap: anywhere;
+  color: var(--soft);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: .03em;
+  margin: 0 0 20px;
+}
+.certificate-id-label {
+  display: inline-block;
+  padding: 2px 6px;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 8px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+/* Footer: links */
+.certificate-footer {
+  margin-top: auto;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+.certificate-links { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; }
+
+.cert-link-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--ink);
+  padding-bottom: 3px;
+  transition: gap .25s var(--ease), color .2s ease, border-color .2s ease;
+}
+.cert-link-primary:hover { gap: 12px; color: var(--muted); border-color: var(--muted); }
+
+.cert-link-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--soft);
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 3px;
+  transition: gap .25s var(--ease), color .2s ease, border-color .2s ease;
+}
+.cert-link-secondary:hover { gap: 10px; color: var(--ink); border-color: var(--line-dark); }
 .whatsapp-button { position: fixed; z-index: 45; right: calc(16px + env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); display: grid; width: 52px; height: 52px; place-items: center; border: 1px solid #13793b; border-radius: 50%; color: white; background: #188b48; box-shadow: 0 4px 16px #0003; transition: opacity .15s ease, transform .15s ease; }
 .whatsapp-button:hover { transform: translateY(-2px); }
 .whatsapp-button:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
@@ -344,7 +481,8 @@ h1 em, h2 em, .large-statement em { color: var(--muted); font-style: normal; }
   .desktop-nav { top: 65px; }
   .certificates-section { padding: 90px 0; }
   .certificate-grid { grid-template-columns: 1fr; }
-  .certificate-card { padding: 22px; }
+  .certificate-card-inner { padding: 22px; }
+  .certificate-title { font-size: clamp(16px, 5vw, 22px); }
 }
 
 @media (prefers-reduced-motion: reduce) {

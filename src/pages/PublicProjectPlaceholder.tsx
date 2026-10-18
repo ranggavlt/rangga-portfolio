@@ -1,4 +1,5 @@
 import { Link, useParams } from 'react-router-dom'
+import { publicSourceUrl } from '../publicSourceLinks'
 import { usePortfolio } from '../repository/PortfolioProvider'
 
 export default function PublicProjectPlaceholder() {
@@ -18,6 +19,8 @@ export default function PublicProjectPlaceholder() {
       </main>
     )
   }
+
+  const sourceUrl = publicSourceUrl(project)
 
   return (
     <main className="case-study">
@@ -85,6 +88,10 @@ export default function PublicProjectPlaceholder() {
                     {image.caption}
                   </figcaption>
                 )}
+                <a className="case-study-image-link" href={image.src} target="_blank" rel="noreferrer" aria-label={`Open ${project.title} image ${index + 1} at full size`}>
+                  View full-size image
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 19 19 5" /><path d="M8 5h11v11" /></svg>
+                </a>
               </figure>
             ))}
           </div>
@@ -121,8 +128,8 @@ export default function PublicProjectPlaceholder() {
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 19 19 5" /><path d="M8 5h11v11" /></svg>
               </a>
             )}
-            {project.sourceUrl && !project.sourceUrl.includes('example.com') && (
-              <a href={project.sourceUrl} target="_blank" rel="noreferrer" className="case-study-ext-link">
+            {sourceUrl && (
+              <a href={sourceUrl} target="_blank" rel="noreferrer" className="case-study-ext-link">
                 Source code
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 19 19 5" /><path d="M8 5h11v11" /></svg>
               </a>

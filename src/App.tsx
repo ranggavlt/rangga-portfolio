@@ -1,6 +1,8 @@
 import { FormEvent, CSSProperties, PointerEvent as ReactPointerEvent, useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { PortfolioProject } from './domain/types'
+import { publicSourceUrl } from './publicSourceLinks'
+import { rememberPortfolioScroll } from './publicScroll'
 import { usePortfolio } from './repository/PortfolioProvider'
 import './styles.css'
 
@@ -194,7 +196,9 @@ function ProjectsSection() {
         </Reveal>
 
         <div className="projects-list">
-          {visibleProjects.map((project, index) => (
+          {visibleProjects.map((project, index) => {
+            const sourceUrl = publicSourceUrl(project)
+            return (
             <article className="project-row" key={project.id}>
               <div className="project-gallery-column">
                 <ProjectGallery project={project} />
@@ -218,15 +222,15 @@ function ProjectsSection() {
                     {project.liveUrl && !project.liveUrl.includes('example.com') && (
                       <a href={project.liveUrl} target="_blank" rel="noreferrer">Visit live site <Icon name="arrow-up-right" size={16} /></a>
                     )}
-                    {project.sourceUrl && !project.sourceUrl.includes('example.com') && (
-                      <a href={project.sourceUrl} target="_blank" rel="noreferrer">Source code <Icon name="arrow-up-right" size={16} /></a>
+                    {sourceUrl && (
+                      <a href={sourceUrl} target="_blank" rel="noreferrer">Source code <Icon name="arrow-up-right" size={16} /></a>
                     )}
-                    <Link to={`/projects/${project.slug}`}>View case study <Icon name="arrow-right" size={16} /></Link>
+                    <Link to={`/projects/${project.slug}`} onClick={rememberPortfolioScroll}>View case study <Icon name="arrow-right" size={16} /></Link>
                   </div>
                 </Reveal>
               </div>
             </article>
-          ))}
+          )})}
         </div>
       </div>
     </section>
@@ -400,17 +404,31 @@ function ContactSection() {
   const [form, setForm] = useState({ name: '', email: '', message: '' })
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [errorMessage, setErrorMessage] = useState('')
+  const [validationAttempted, setValidationAttempted] = useState(false)
+  const nameError = validationAttempted && !form.name.trim() ? 'Enter your name.' : ''
+  const emailError = validationAttempted
+    ? !form.email.trim() ? 'Enter your email address.' : !/^\S+@\S+\.\S+$/.test(form.email.trim()) ? 'Enter a valid email address.' : ''
+    : ''
+  const messageError = validationAttempted && !form.message.trim() ? 'Enter a message.' : ''
+
+  const updateForm = (field: keyof typeof form, value: string) => {
+    setForm((current) => ({ ...current, [field]: value }))
+    if (status === 'error') {
+      setStatus('idle')
+      setErrorMessage('')
+    }
+  }
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    if (!form.name.trim() || !form.email.trim() || !form.message.trim()) {
+    setValidationAttempted(true)
+    const firstInvalidField = !form.name.trim() ? 'name'
+      : !form.email.trim() || !/^\S+@\S+\.\S+$/.test(form.email.trim()) ? 'email'
+        : !form.message.trim() ? 'message' : null
+    if (firstInvalidField) {
       setStatus('error')
-      setErrorMessage('Please fill in all three fields before sending.')
-      return
-    }
-    if (!/^\S+@\S+\.\S+$/.test(form.email)) {
-      setStatus('error')
-      setErrorMessage('That email address looks a little off. Check it and try again.')
+      setErrorMessage('Please correct the highlighted fields before sending.')
+      requestAnimationFrame(() => document.getElementById(firstInvalidField)?.focus())
       return
     }
     setStatus('loading')
@@ -425,6 +443,7 @@ function ContactSection() {
         read: false,
       })
       setStatus('success')
+      setValidationAttempted(false)
       setForm({ name: '', email: '', message: '' })
     } catch {
       setStatus('error')
@@ -445,15 +464,18 @@ function ContactSection() {
           <form className="contact-form" onSubmit={handleSubmit} noValidate>
             <div className="field-row">
               <label htmlFor="name">Your name <span>*</span></label>
-              <input id="name" name="name" type="text" placeholder="Jane Smith" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} aria-invalid={status === 'error' && !form.name} />
+              <input id="name" name="name" type="text" placeholder="Jane Smith" autoComplete="name" required value={form.name} onChange={(event) => updateForm('name', event.target.value)} aria-invalid={!!nameError} aria-describedby={nameError ? 'name-error' : undefined} />
+              {nameError && <span className="field-error" id="name-error">{nameError}</span>}
             </div>
             <div className="field-row">
               <label htmlFor="email">Email address <span>*</span></label>
-              <input id="email" name="email" type="email" placeholder="jane@company.com" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} aria-invalid={status === 'error' && !!form.email && !/^\S+@\S+\.\S+$/.test(form.email)} />
+              <input id="email" name="email" type="email" placeholder="jane@company.com" autoComplete="email" required value={form.email} onChange={(event) => updateForm('email', event.target.value)} aria-invalid={!!emailError} aria-describedby={emailError ? 'email-error' : undefined} />
+              {emailError && <span className="field-error" id="email-error">{emailError}</span>}
             </div>
             <div className="field-row">
               <label htmlFor="message">A few words <span>*</span></label>
-              <textarea id="message" name="message" rows={4} placeholder="What are you making?" value={form.message} onChange={(event) => setForm({ ...form, message: event.target.value })} aria-invalid={status === 'error' && !form.message} />
+              <textarea id="message" name="message" rows={4} placeholder="What are you making?" required value={form.message} onChange={(event) => updateForm('message', event.target.value)} aria-invalid={!!messageError} aria-describedby={messageError ? 'message-error' : undefined} />
+              {messageError && <span className="field-error" id="message-error">{messageError}</span>}
             </div>
             <div className="form-footer">
               <div className={`form-feedback ${status}`} role="status" aria-live="polite">

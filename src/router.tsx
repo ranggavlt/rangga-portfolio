@@ -4,6 +4,7 @@ import App from './App'
 import { useAuth } from './auth/AuthProvider'
 import PublicProjectPlaceholder from './pages/PublicProjectPlaceholder'
 import NotFoundPage from './pages/NotFoundPage'
+import { PublicScrollManager } from './publicScroll'
 
 const AdminLayout = lazy(() => import('./admin/components/AdminUI').then((module) => ({ default: module.AdminLayout })))
 const LoginPage = lazy(() => import('./admin/pages/LoginPage'))
@@ -30,7 +31,7 @@ function AdminNotFound() {
 }
 
 export function PortfolioRouter() {
-  return <Suspense fallback={<div className="route-loading" role="status">Loading page…</div>}><Routes>
+  return <><PublicScrollManager /><Suspense fallback={<div className="route-loading" role="status">Loading page…</div>}><Routes>
     <Route path="/" element={<App />} />
     <Route path="/projects/:slug" element={<PublicProjectPlaceholder />} />
     <Route path="/admin/login" element={<LoginPage />} />
@@ -51,5 +52,5 @@ export function PortfolioRouter() {
       </Route>
     </Route>
     <Route path="*" element={<NotFoundPage />} />
-  </Routes></Suspense>
+  </Routes></Suspense></>
 }

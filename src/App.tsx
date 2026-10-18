@@ -381,21 +381,45 @@ function AboutSection({ number }: { number: string }) {
 
 function SkillsSection({ number }: { number: string }) {
   const { data } = usePortfolio()
+  const sortedGroups = [...data.skills].sort((a, b) => a.displayOrder - b.displayOrder)
+  const [activeIndex, setActiveIndex] = useState<number | null>(0)
 
   return (
     <section className="section skills-section" id="skills">
-      <div className="container">
-        <Reveal className="section-heading-row compact-heading">
+      <div className="container skills-layout">
+        <Reveal className="skills-intro">
           <SectionLabel number={number} label="Skills & expertise" detail="Tools for useful work" />
-          <p className="section-intro">A wide enough lens to see the whole system, a close enough eye to care about the details.</p>
+          <p className="skills-statement">A wide enough lens to see the whole system, a close enough eye to care about the details.</p>
         </Reveal>
-        <div className="skills-grid">
-          {[...data.skills].sort((a, b) => a.displayOrder - b.displayOrder).map((group, index) => (
-            <Reveal className="skill-group" delay={index * 80} key={group.label}>
-              <div className="skill-group-top"><span>0{index + 1}</span><h3>{group.label}</h3></div>
-              <ul>{group.skills.map((skill) => <li key={skill}>{skill}</li>)}</ul>
-            </Reveal>
-          ))}
+        <div className="skills-accordion">
+          {sortedGroups.map((group, index) => {
+            const isOpen = activeIndex === index
+            const subNumber = `${number}.${index + 1}`
+            return (
+              <Reveal key={group.id} delay={index * 70} className="skill-accordion-item-wrap">
+                <div className={`skill-accordion-item ${isOpen ? 'is-open' : ''}`}>
+                  <button
+                    type="button"
+                    className="skill-accordion-trigger"
+                    onClick={() => setActiveIndex(isOpen ? null : index)}
+                    aria-expanded={isOpen}
+                  >
+                    <span className="skill-sub-number">{subNumber}</span>
+                    <span className="skill-accordion-label">{group.label}</span>
+                    <span className="skill-accordion-count">{group.skills.length} skills</span>
+                    <span className="skill-accordion-arrow"><Icon name="arrow-down" size={16} /></span>
+                  </button>
+                  <div className="skill-accordion-body" aria-hidden={!isOpen}>
+                    <ul className="skill-pill-list">
+                      {group.skills.map((skill, si) => (
+                        <li key={skill} className="skill-pill" style={{ '--si': si } as CSSProperties}>{skill}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </Reveal>
+            )
+          })}
         </div>
       </div>
     </section>
@@ -500,7 +524,23 @@ function ContactSection({ number }: { number: string }) {
 
 function CertificatesSection() {
   const { data } = usePortfolio()
+  const [lineVisible, setLineVisible] = useState(false)
+  const timelineRef = useRef<HTMLDivElement>(null)
   const certificates = data.certificates.filter((entry) => entry.published && entry.proofUrl).sort((a, b) => a.displayOrder - b.displayOrder)
+
+  useEffect(() => {
+    const node = timelineRef.current
+    if (!node) return
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        setLineVisible(true)
+        observer.disconnect()
+      }
+    }, { threshold: 0.1 })
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [])
+
   if (!certificates.length) return null
   return (
     <section className="section certificates-section" id="certificates">
@@ -509,9 +549,12 @@ function CertificatesSection() {
           <SectionLabel number="05" label="Certificates" detail="Verified credentials" />
           <p className="section-intro">Credentials with a public record or certificate proof.</p>
         </Reveal>
-        <div className="certificate-grid">
+        <div className={`cert-timeline ${lineVisible ? 'line-visible' : ''}`} ref={timelineRef}>
+          <div className="cert-timeline-rule" aria-hidden="true"><span /></div>
           {certificates.map((entry, index) => (
-            <Reveal key={entry.id} delay={index * 75} className="cert-card-reveal">
+            <Reveal key={entry.id} delay={index * 90} className="cert-timeline-item">
+              <div className="cert-timeline-dot" aria-hidden="true" />
+              <div className="cert-timeline-index" aria-hidden="true">{String(index + 1).padStart(2, '0')}</div>
               <article className="certificate-card">
                 <div className="certificate-card-accent" aria-hidden="true" />
                 <div className="certificate-card-inner">
@@ -520,7 +563,6 @@ function CertificatesSection() {
                       <span className="certificate-issuer">{entry.issuer}</span>
                       <time className="certificate-date" dateTime={entry.issuedOn}>{entry.issuedOn}</time>
                     </div>
-                    <span className="certificate-index" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
                   </div>
                   <h3 className="certificate-title">{entry.name}</h3>
                   {entry.credentialId && (
